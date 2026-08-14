@@ -12,3 +12,6 @@ dependencies = [
 
 [tool.uv.sources]
 "mtmb" = { path = "../../mtmb" }
+
+[tool.ruff]
+extend = "../pyproject.toml"

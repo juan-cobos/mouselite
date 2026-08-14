@@ -5,6 +5,7 @@ from pathlib import Path
 from rfdetr.config import KeypointTrainConfig
 from rfdetr.datasets import infer_coco_keypoint_schema
 from rfdetr.training import RFDETRDataModule, RFDETRModelModule, build_trainer
+
 from src.builder import RESOLUTION, make_rfdetr_keypoints
 from src.data import (
     EVERY,
