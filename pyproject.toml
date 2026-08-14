@@ -1,0 +1,17 @@
+[project]
+name = "mouselite"
+version = "0.1.0"
+description = "Real-time mouse detection, segmentation and pose estimation."
+readme = "README.md"
+authors = [
+    { name = "Juan Cobos", email = "juan.cobos@igf.cnrs.fr" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+mouselite = "mouselite:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"

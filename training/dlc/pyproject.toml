@@ -1,0 +1,27 @@
+# DeepLabCut's own project, deliberately separate from the RF-DETR one.
+#
+# DLC pins numpy<2, matplotlib<3.9 and albumentations<=1.4.3 against RF-DETR's
+# numpy 2.x, and ships no Python 3.13 wheels. The two resolve into incompatible
+# environments, so they get one each and meet only on disk: `mtmb` writes the
+# split, `train_dlc.py` trains on it, and predictions come back as COCO results
+# for `eval.py` to score in the RF-DETR environment -- one evaluator, one set of
+# OKS sigmas, for both model families.
+#
+# Run from the repository root, not from here: `src.data` derives every path from
+# the working directory, so the splits and runs would otherwise land under dlc/.
+#
+#   uv sync --project dlc
+#   uv run --project dlc python train_dlc.py
+[project]
+name = "mouselite-dlc"
+version = "0.1.0"
+description = "Training and evaluation for DeepLabCut."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "deeplabcut @ git+https://github.com/DeepLabCut/DeepLabCut.git",
+    "faster-coco-eval>=1.6",
+    "mtmb",
+]
+
+[tool.uv.sources]
+"mtmb" = { path = "../../../mtmb" }

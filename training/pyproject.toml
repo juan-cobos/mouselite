@@ -1,0 +1,14 @@
+[project]
+name = "mouselite-rfdetr"
+version = "0.1.0"
+description = "Training and evaluation for MouseLite (RF-DETR)."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "rfdetr[loggers,train,visual]>=1.9.0",
+    "supervision>=0.29",
+    "mtmb",
+]
+
+[tool.uv.sources]
+"mtmb" = { path = "../../mtmb" }
