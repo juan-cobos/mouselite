@@ -7,7 +7,14 @@ authors = [
     { name = "Juan Cobos", email = "juan.cobos@igf.cnrs.fr" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "huggingface-hub>=1.27.0",
+    "opencv-python>=5.0.0.93",
+    "rfdetr>=1.9.2",
+    "supervision>=0.30.0",
+    "tqdm>=4.70.0",
+    "trackers>=2.6.0",
+]
 
 [project.scripts]
 mouselite = "mouselite:main"
@@ -19,6 +26,7 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.2",
+    "pytest>=8.4.2",
     "ruff>=0.16.2",
 ]
 
