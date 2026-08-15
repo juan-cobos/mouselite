@@ -12,7 +12,6 @@ from supervision.dataset.formats.coco import (
     detections_to_coco_annotations,
 )
 from supervision.utils.file import save_json_file
-from tqdm import tqdm
 from trackers.core.base import BaseTracker
 
 
@@ -222,46 +221,5 @@ class Pipeline:
             cv2.destroyAllWindows()
 
         save_json_file(coco, file_path=annotations_path)
-
-        return target
-
-    def retrack(
-        self,
-        annotations_path: str | Path,
-        output_dir: str | Path = "output",
-        tracker: BaseTracker | None = None,
-        fps: float = 10.0,
-        show_progress: bool = True,
-    ) -> Path:
-        """Replay a previously exported COCO dataset through `tracker`."""
-        annotations_path = Path(annotations_path)
-        dataset = sv.DetectionDataset.from_coco(
-            images_directory_path=str(annotations_path.parent / "images"),
-            annotations_path=str(annotations_path),
-        )
-        tracker = tracker or self.tracker
-        tracker.reset()
-
-        stem = annotations_path.parent.name.removesuffix("_coco")
-        target = Path(output_dir) / f"{stem}_retracked.mp4"
-        target.parent.mkdir(parents=True, exist_ok=True)
-
-        image_paths = sorted(dataset.image_paths)
-        first_frame = cv2.imread(image_paths[0])
-        video_info = sv.VideoInfo(
-            width=first_frame.shape[1],
-            height=first_frame.shape[0],
-            fps=fps,
-        )
-
-        with sv.VideoSink(target_path=str(target), video_info=video_info) as sink:
-            for image_path in tqdm(
-                image_paths,
-                disable=not show_progress,
-                desc="retracking",
-            ):
-                frame = cv2.imread(image_path)
-                detections = tracker.update(dataset.annotations[image_path], frame=frame)
-                sink.write_frame(self.annotator.annotate(frame.copy(), detections))
 
         return target

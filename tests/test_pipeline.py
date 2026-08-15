@@ -45,8 +45,8 @@ def make_video(path: Path, frames: int = 6, size: int = 64) -> None:
     writer.release()
 
 
-def test_run_and_retrack_keypoints(tmp_path: Path) -> None:
-    """Fake keypoints model + tracker, exercising run() and retrack() end to end."""
+def test_run_keypoints(tmp_path: Path) -> None:
+    """Fake keypoints model + tracker, exercising run() end to end."""
     video_path = tmp_path / "smoke.mp4"
     make_video(video_path)
 
@@ -63,10 +63,3 @@ def test_run_and_retrack_keypoints(tmp_path: Path) -> None:
     assert coco["images"]
     assert "frame_index" in coco["images"][0]
     assert "keypoints" in coco["annotations"][0]
-
-    retracked_video = pipeline.retrack(
-        annotations_path,
-        output_dir=tmp_path / "output",
-        show_progress=False,
-    )
-    assert retracked_video.exists()
