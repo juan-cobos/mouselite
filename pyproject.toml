@@ -17,6 +17,11 @@ dependencies = [
     "typer>=0.27.1",
 ]
 
+[project.optional-dependencies]
+app = [
+    "gradio>=6.0.0",
+]
+
 [project.scripts]
 mouselite = "mouselite.cli:main"
 

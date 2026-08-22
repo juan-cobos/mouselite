@@ -82,6 +82,24 @@ def retrack(
     typer.echo(f"wrote {output}")
 
 
+@app.command("app")
+def app_command(
+    share: bool = True,
+    host: str | None = None,
+    port: int | None = None,
+) -> None:
+    r"""Launch the Gradio demo. Needs the extra: `pip install mouselite\[app]`."""
+    try:
+        from mouselite.app import main as launch_app
+    except ImportError as exc:  # gradio is an optional dependency
+        typer.echo(
+            f"{exc}\nThe demo needs gradio: install with `pip install mouselite[app]`.",
+            err=True,
+        )
+        raise typer.Exit(1) from exc
+    launch_app(share=share, host=host, port=port)
+
+
 @app.command("list-models")
 def list_models() -> None:
     """Print the available --kind values, and --size options for sized kinds."""
