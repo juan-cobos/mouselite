@@ -32,7 +32,7 @@ def run(
     compile: bool = False,
     show_progress: bool = True,
 ) -> None:
-    """Detect -> track -> annotate `video_path`, writing the video and a COCO export."""
+    """Run inference on `video_path`, writing an annotated video and a COCO export."""
     model = get_model(
         kind,
         size=size,
@@ -70,7 +70,7 @@ def retrack(
     fps: float = 10.0,
     show_progress: bool = True,
 ) -> None:
-    """Replay a previously exported COCO dataset through `tracker`, skipping detection."""
+    """Re-run tracking on a previously exported COCO dataset, without running inference."""
     tracker_instance = get_tracker(tracker, frame_rate=fps)
     output = retrack_video(
         annotations_path,

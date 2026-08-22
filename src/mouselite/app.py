@@ -40,7 +40,7 @@ def run_inference(
     every,
     progress=gr.Progress(track_tqdm=True),  # noqa: B008 — Gradio injects via this default
 ):
-    """Detect -> track -> annotate the input video, returning the video and COCO export."""
+    """Run inference on the input video, returning the annotated video and COCO export."""
     if video_path is None:
         gr.Warning("Please upload a video or record from webcam first.")
         return None, gr.update(visible=False), None
@@ -74,7 +74,7 @@ def run_retrack(
     tracker_type,
     progress=gr.Progress(track_tqdm=True),  # noqa: B008 — Gradio injects via this default
 ):
-    """Replay the last run's detections through another tracker, skipping detection."""
+    """Re-run tracking on the last run's predictions, without running inference again."""
     if not state:
         gr.Warning("Run inference once before retracking.")
         return None
@@ -96,7 +96,9 @@ def _toggle_size(kind):
 
 
 with gr.Blocks(title="MouseLite") as demo:
-    gr.Markdown("# MouseLite\nDetect → track → pose mice in videos.")
+    gr.Markdown(
+        "# MouseLite\nRun detection, segmentation or pose inference on mice videos.",
+    )
 
     last_run = gr.State()
 
@@ -113,19 +115,19 @@ with gr.Blocks(title="MouseLite") as demo:
         retrack_btn = gr.Button("Retrack", size="lg")
     annotations_out = gr.File(label="Annotations file", interactive=False, visible=False)
 
-    with gr.Accordion("Configuration", open=False), gr.Row():
+    with gr.Accordion("Configuration", open=True), gr.Row():
         with gr.Column():
             kind = gr.Dropdown(
                 choices=KINDS,
                 value="keypoints",
                 label="Kind",
-                info="Pose, detection or segmentation",
+                info="Which model to run: pose, detection or segmentation.",
             )
             model_size = gr.Dropdown(
                 choices=SIZES,
                 value="medium",
-                label="MouseLite size",
-                info="Larger = more accurate, slower. Not used by keypoints.",
+                label="Size",
+                info="Larger models are more accurate but slower. Not used by keypoints.",
                 interactive=False,
             )
             tracker_type = gr.Dropdown(
@@ -142,15 +144,15 @@ with gr.Blocks(title="MouseLite") as demo:
                 step=0.05,
                 value=0.5,
                 label="Threshold",
-                info="Minimum score for a prediction to be kept.",
+                info="Minimum confidence for a prediction to be kept.",
             )
             nms_threshold = gr.Slider(
                 minimum=0.05,
                 maximum=1.0,
                 step=0.05,
-                value=0.3,
+                value=0.5,
                 label="NMS threshold",
-                info="Maximum overlap allowed between two kept predictions.",
+                info="Drop the lower-scoring of two predictions overlapping above this.",
             )
             top_k = gr.Slider(
                 minimum=1,
@@ -158,15 +160,15 @@ with gr.Blocks(title="MouseLite") as demo:
                 step=1,
                 value=2,
                 label="Max animals",
-                info="Top-K detections per frame.",
+                info="Keep only the highest-scoring predictions per frame.",
             )
             every = gr.Slider(
                 minimum=1,
                 maximum=10,
                 step=1,
                 value=1,
-                label="Predict every N frames",
-                info="Skip predictions every X frames",
+                label="Inference stride",
+                info="Run inference on 1 of every N frames.",
             )
 
     kind.change(_toggle_size, inputs=kind, outputs=model_size)

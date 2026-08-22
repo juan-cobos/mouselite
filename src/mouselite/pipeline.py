@@ -1,4 +1,4 @@
-"""End-to-end detect -> track -> annotate pipeline."""
+"""End-to-end video inference pipeline: prediction, tracking and annotation."""
 
 from pathlib import Path
 from typing import Protocol
@@ -136,7 +136,7 @@ class Pipeline:
         hud: bool = False,
         save_path: str | Path | None = None,
     ) -> Path:
-        """Detect -> track -> annotate `video_path`, writing the video and a COCO export."""
+        """Run inference on `video_path`, writing an annotated video and a COCO export."""
         self.tracker.reset()
         video_path = Path(video_path)
         target = Path(output_dir) / f"{video_path.stem}_annotated.mp4"
