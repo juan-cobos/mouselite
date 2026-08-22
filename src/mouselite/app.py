@@ -209,6 +209,7 @@ def main(
         share=share,
         server_name=host,
         server_port=port,
+        footer_links=[],
     )
 
 
