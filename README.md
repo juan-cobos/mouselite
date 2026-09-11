@@ -1,5 +1,7 @@
 # MouseLite
 
+<div align="center"><img src="assets/logo.svg" alt="MouseLite" width="300"></div>
+
 Real-time mouse detection, segmentation and pose estimation.
 
 MouseLite wraps fine-tuned [RF-DETR](https://github.com/roboflow/rf-detr) models in a
