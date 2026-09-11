@@ -13,7 +13,7 @@ from rfdetr import (
     RFDETRSmall,
 )
 
-MODELS: dict[str, dict[str, type]] = {
+MODELS = {
     "detection": {
         "nano": RFDETRNano,
         "small": RFDETRSmall,
