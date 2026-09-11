@@ -46,7 +46,7 @@ uv sync --extra app
 Model weights are downloaded from the Hugging Face Hub on first use and cached;
 pass `--checkpoint` to use your own instead.
 
-## Usage (CLI)
+## CLI
 
 ```bash
 mouselite --help
@@ -133,7 +133,7 @@ cbiou
 mcbyte
 ```
 
-## Usage (Python API)
+## Python API
 
 The CLI is a thin wrapper over three pieces: a model, a tracker, and a `Pipeline`
 that joins them.
