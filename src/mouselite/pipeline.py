@@ -48,12 +48,20 @@ def _detections_to_coco(
     image_id: int,
     annotation_id: int,
 ) -> tuple[list[dict], int]:
-    """Build COCO annotation dicts for one image, adding `keypoints` when present."""
+    """Build COCO annotation dicts for one image, adding `track_id` and `keypoints`."""
     coco_annotations, annotation_id = detections_to_coco_annotations(
         detections,
         image_id,
         annotation_id,
     )
+
+    if detections.tracker_id is not None:
+        for annotation, track_id in zip(
+            coco_annotations,
+            detections.tracker_id,
+            strict=True,
+        ):
+            annotation["track_id"] = int(track_id)
 
     if "keypoints_xy" in detections.data:
         xy = np.asarray(detections.data["keypoints_xy"], dtype=np.float32)

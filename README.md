@@ -106,8 +106,11 @@ Tracking is usually what you end up tuning, and it is far cheaper than inference
 mouselite retrack output/video_coco/annotations.json --tracker ocsort
 ```
 
-Writes `output/video_retracked.mp4`. The frame rate is read from the export (`run`
-records it, divided by `--every`), falling back to 30; pass `--fps` to override.
+Writes `output/video_retracked.mp4` and updates each annotation's `track_id` in
+`annotations.json` in place, so the export always reflects the last tracking pass
+(`-1` for detections the tracker did not confirm). The frame rate is read from the
+export (`run` records it, divided by `--every`), falling back to 30; pass `--fps` to
+override.
 
 The two knobs that matter most for mice are how long a track survives an occlusion
 and how loosely a detection may match it:

@@ -63,3 +63,4 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert coco["images"]
     assert "frame_index" in coco["images"][0]
     assert "keypoints" in coco["annotations"][0]
+    assert coco["annotations"][0]["track_id"] == 0
