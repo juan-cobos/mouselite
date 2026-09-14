@@ -65,7 +65,7 @@ def run_inference(
 
     # Pipeline writes the COCO export next to the annotated video, keyed by video stem.
     ann_out = out_dir / f"{Path(video_path).stem}_coco" / "annotations.json"
-    state = {"annotations": str(ann_out), "fps": fps}
+    state = {"annotations": str(ann_out)}
     return str(video_out_path), gr.update(value=str(ann_out), visible=True), state
 
 
@@ -80,12 +80,10 @@ def run_retrack(
         return None
 
     progress(0, desc=f"Retracking with {tracker_type}...")
-    tracker = get_tracker(tracker_type, frame_rate=state["fps"])
     target = retrack(
         state["annotations"],
-        tracker,
+        tracker_type,
         output_dir=_tmp_dir("mouselite_retrack_"),
-        fps=state["fps"],
     )
     return str(target)
 

@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import cv2
@@ -11,7 +12,6 @@ from trackers import (
     OCSORTTracker,
     SORTTracker,
 )
-from trackers.core.base import BaseTracker
 
 from mouselite.pipeline import MetaAnnotator
 
@@ -31,20 +31,36 @@ def get_tracker(name: str, **kwargs):
     return TRACKERS[name](**kwargs)
 
 
+DEFAULT_FPS = 30.0
+
+
+def read_fps(annotations_path: str | Path, default: float = DEFAULT_FPS) -> float:
+    """Frame rate recorded in a COCO export's `info` block, or `default` if it has none."""
+    with open(annotations_path) as f:
+        info = json.load(f).get("info") or {}
+    return float(info.get("fps", default))
+
+
 def retrack(
     annotations_path: str | Path,
-    tracker: BaseTracker,
+    tracker: str,
     output_dir: str | Path = "output",
-    fps: float = 10.0,
+    fps: float | None = None,
     show_progress: bool = True,
+    **tracker_kwargs,
 ) -> Path:
-    """Replay a previously exported COCO dataset through `tracker`, skipping detection."""
+    """Replay a previously exported COCO dataset through a tracker, skipping detection.
+
+    `tracker` is a name from `TRACKERS`; `tracker_kwargs` go to its constructor.
+    `fps` defaults to the frame rate recorded in the export, else 30.
+    """
     annotations_path = Path(annotations_path)
+    fps = fps or read_fps(annotations_path)
     dataset = sv.DetectionDataset.from_coco(
         images_directory_path=str(annotations_path.parent / "images"),
         annotations_path=str(annotations_path),
     )
-    tracker.reset()
+    tracker = get_tracker(tracker, frame_rate=fps, **tracker_kwargs)
     annotator = MetaAnnotator()
 
     stem = annotations_path.parent.name.removesuffix("_coco")

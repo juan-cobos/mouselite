@@ -152,8 +152,10 @@ class Pipeline:
 
         detections = sv.Detections.empty()
         fps_monitor = sv.FPSMonitor() if hud else None
+        video_fps = sv.VideoInfo.from_video_path(str(video_path)).fps
         coco = {
-            "info": {},
+            # Frame rate of the exported frames, so retrack replays them at the right speed.
+            "info": {"fps": video_fps / self.every},
             "licenses": [],
             "categories": classes_to_coco_categories(self.model.class_names),
             "images": [],

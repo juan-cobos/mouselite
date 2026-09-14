@@ -103,10 +103,25 @@ Tracking is usually what you end up tuning, and it is far cheaper than inference
 `retrack` replays an existing COCO export through a different tracker:
 
 ```bash
-mouselite retrack output/video_coco/annotations.json --tracker ocsort --fps 30
+mouselite retrack output/video_coco/annotations.json --tracker ocsort
 ```
 
-Writes `output/video_retracked.mp4`.
+Writes `output/video_retracked.mp4`. The frame rate is read from the export (`run`
+records it, divided by `--every`), falling back to 30; pass `--fps` to override.
+
+The two knobs that matter most for mice are how long a track survives an occlusion
+and how loosely a detection may match it:
+
+| Option                    | Default (tracker's) | Meaning                                              |
+| ------------------------- | ------------------- | ---------------------------------------------------- |
+| `--lost-track-buffer`     | `30`                | frames a track is kept alive without a match, at 30 fps |
+| `--minimum-iou-threshold` | `0.1`–`0.3`         | minimum IoU to match a detection to an existing track |
+
+Both are forwarded as-is to the tracker class.
+
+```bash
+mouselite retrack output/video_coco/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+```
 
 ### `app` — Gradio demo
 
@@ -212,13 +227,14 @@ export as COCO `keypoints`/`num_keypoints` fields.
 ### `retrack`
 
 ```python
-from mouselite.tracker import get_tracker, retrack
+from mouselite.tracker import retrack
 
 retracked_path = retrack(
     "output/video_coco/annotations.json",
-    get_tracker("botsort", frame_rate=30),
+    "ocsort",
     output_dir="output",
-    fps=30,
+    fps=None,               # recorded by `run`, else 30
+    lost_track_buffer=90,   # any further kwargs go to the tracker class
 )
 ```
 

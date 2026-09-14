@@ -67,17 +67,32 @@ def retrack(
     annotations_path: Path,
     tracker: Annotated[str, typer.Option(help="One of the trackers from list-trackers.")],
     output_dir: Path = Path("output"),
-    fps: float = 10.0,
+    fps: Annotated[
+        float | None,
+        typer.Option(help="Defaults to the frame rate recorded in the export, else 30."),
+    ] = None,
+    lost_track_buffer: Annotated[
+        int | None,
+        typer.Option(help="Frames a track survives without a match (at 30 fps)."),
+    ] = None,
+    minimum_iou_threshold: Annotated[
+        float | None,
+        typer.Option(help="Minimum IoU to match a detection to a track."),
+    ] = None,
     show_progress: bool = True,
 ) -> None:
     """Re-run tracking on a previously exported COCO dataset, without running inference."""
-    tracker_instance = get_tracker(tracker, frame_rate=fps)
+    tracker_kwargs = {
+        "lost_track_buffer": lost_track_buffer,
+        "minimum_iou_threshold": minimum_iou_threshold,
+    }
     output = retrack_video(
         annotations_path,
-        tracker_instance,
+        tracker,
         output_dir=output_dir,
         fps=fps,
         show_progress=show_progress,
+        **{k: v for k, v in tracker_kwargs.items() if v is not None},
     )
     typer.echo(f"wrote {output}")
 
