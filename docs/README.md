@@ -1,6 +1,6 @@
 # MouseLite documentation
 
-The [top-level README](../README.md) covers install, the CLI essentials and the
+The [top-level README](https://github.com/juan-cobos/mouselite#readme) covers install, the CLI essentials and the
 Python API basics. The pages here go deeper.
 
 | Page | Read it when you want to… |
@@ -14,4 +14,4 @@ Python API basics. The pages here go deeper.
 | [Development](development.md) | run the tests, lint, or change the package |
 
 Training and evaluation code for the released models lives in
-[`training/`](../training/README.md) and has its own README.
+[`training/`](https://github.com/juan-cobos/mouselite/tree/main/training) and has its own README.

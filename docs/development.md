@@ -30,7 +30,7 @@ mouselite/
 `training/` is a separate uv project with its own lockfile (and a nested one under
 `training/dlc/` for DeepLabCut). It is not part of the `mouselite` wheel and depends
 on the `mtmb` dataset package from a sibling checkout; see its
-[README](../training/README.md).
+[README](https://github.com/juan-cobos/mouselite/tree/main/training).
 
 ## Tests
 
