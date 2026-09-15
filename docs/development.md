@@ -80,6 +80,24 @@ runs both on staged files.
   matches at any depth, so the files already in `training/scripts/` are tracked but
   a *new* file there needs `git add -f`.
 
+## Docs
+
+The pages in `docs/` are built with [MkDocs](https://www.mkdocs.org/) and the
+[Material](https://squidfunk.github.io/mkdocs-material/) theme, configured in
+`mkdocs.yml`. Preview with live reload, no install required:
+
+```bash
+uvx --with mkdocs-material mkdocs serve
+```
+
+then open <http://127.0.0.1:8000>. `mkdocs build --strict` fails on broken links
+and missing anchors, so run it before committing. The theme colours come from the
+logo and live in `docs/stylesheets/extra.css`; `docs/assets/icon.svg` is the single
+mouse cut out of `assets/logo.svg` for the header and favicon.
+
+To publish to GitHub Pages: `uvx --with mkdocs-material mkdocs gh-deploy`, then
+enable Pages on the `gh-pages` branch in the repository settings.
+
 ## Releasing
 
 1. Bump `version` in `pyproject.toml`.

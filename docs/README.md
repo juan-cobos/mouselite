@@ -1,4 +1,13 @@
-# MouseLite documentation
+---
+title: Overview
+---
+
+<div class="ml-hero">
+--8<-- "assets/logo.svg"
+<p class="ml-tagline">Real-time mouse detection, segmentation and pose estimation.</p>
+</div>
+
+# Documentation
 
 The [top-level README](https://github.com/juan-cobos/mouselite#readme) covers install, the CLI essentials and the
 Python API basics. The pages here go deeper.

@@ -9,8 +9,8 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 | [`run`](#mouselite-run) | inference + tracking on a video → annotated video + COCO export |
 | [`retrack`](#mouselite-retrack) | re-run tracking on an existing export, no inference |
 | [`app`](#mouselite-app) | launch the Gradio demo |
-| [`list-models`](#mouselite-list-models--list-trackers) | print valid `--kind` / `--size` values |
-| [`list-trackers`](#mouselite-list-models--list-trackers) | print valid `--tracker` values |
+| [`list-models`](#list-commands) | print valid `--kind` / `--size` values |
+| [`list-trackers`](#list-commands) | print valid `--tracker` values |
 
 Every command accepts `--help`. Boolean options follow typer's convention: `--show`
 turns a flag on, `--no-show` turns it off; the `[default: …]` in `--help` shows which
@@ -146,7 +146,7 @@ into a temp directory, offers the `annotations.json` for download, and can `retr
 the same predictions with another tracker. Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.
 
-## `mouselite list-models` / `list-trackers`
+## `mouselite list-models` and `list-trackers` { #list-commands }
 
 ```
 $ mouselite list-models

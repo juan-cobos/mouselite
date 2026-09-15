@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="36 48 184 104" role="img" aria-label="MouseLite">
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF1F8"/>
+      <stop offset="1" stop-color="#D5DCEA"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(122 110) scale(0.95 0.95) rotate(-4)" color="#5B5BD6">
+    <g stroke="#8E98AE" stroke-width="2.2" stroke-linecap="round" fill="none" opacity=".7">
+      <path d="M 70 -8 Q 80 -14 89 -15"/>
+      <path d="M 71 -2 Q 81 -3 90 -1"/>
+      <path d="M 71 4 Q 80 6 88 10"/>
+    </g>
+    <g fill="#5B5BD6" stroke="#5B5BD6" stroke-width="8" stroke-linejoin="round">
+      <path d="M -50 8 C -76 14 -80 -2 -70 -6" fill="none" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="12" cy="-30" r="12.5"/>
+      <circle cx="34" cy="-36" r="17"/>
+      <ellipse cx="-12" cy="4" rx="40" ry="30"/>
+      <circle cx="40" cy="-8" r="23"/>
+      <ellipse cx="62" cy="-2" rx="13" ry="9"/>
+    </g>
+    <g fill="url(#fur)" opacity=".78">
+      <path d="M -50 8 C -76 14 -80 -2 -70 -6" fill="none" stroke-width="4.5" stroke-linecap="round"/>
+      <circle cx="12" cy="-30" r="12.5"/>
+      <circle cx="34" cy="-36" r="17"/>
+      <ellipse cx="-12" cy="4" rx="40" ry="30"/>
+      <circle cx="40" cy="-8" r="23"/>
+      <ellipse cx="62" cy="-2" rx="13" ry="9"/>
+    </g>
+    <circle cx="12" cy="-30" r="6.5" fill="#FFB3C1"/>
+    <circle cx="34" cy="-36" r="9" fill="#FFB3C1"/>
+    <ellipse cx="56" cy="6" rx="7.5" ry="4.5" fill="#FFB3C1" opacity=".6"/>
+    <circle cx="45" cy="-16" r="6.2" fill="#2E3440"/>
+    <circle cx="47.1" cy="-18.1" r="2.1" fill="#FFFFFF"/>
+    <ellipse cx="74" cy="-2" rx="4.8" ry="3.8" fill="#FF8FA3"/>
+    <path d="M 68 4 q 5 5 10 1" fill="none" stroke="#2E3440" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>
+    <g stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none">
+      <path d="M 74 -2 L 16 -16"/>
+      <path d="M 34 -36 L 16 -16"/>
+      <path d="M 16 -16 L -12 -22"/>
+      <path d="M -12 -22 L -40 -2"/>
+      <path d="M -40 -2 L -50 8"/>
+      <path d="M -50 8 L -70 -6"/>
+    </g>
+    <g fill="#FFFFFF" stroke="currentColor" stroke-width="2.6">
+      <circle cx="74" cy="-2" r="4"/>
+      <circle cx="34" cy="-36" r="4"/>
+      <circle cx="16" cy="-16" r="4"/>
+      <circle cx="-12" cy="-22" r="4"/>
+      <circle cx="-40" cy="-2" r="4"/>
+      <circle cx="-50" cy="8" r="4"/>
+      <circle cx="-70" cy="-6" r="4"/>
+    </g>
+  </g>
+</svg>

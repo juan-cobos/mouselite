@@ -1,0 +1,100 @@
+/* MouseLite theme — colours lifted from assets/logo.svg:
+   ink #2E3440 (wordmark), indigo #5B5BD6 ("Lite", first mouse),
+   teal #12A594 (second mouse), fur #EEF1F8 → #D5DCEA, light ink #EDF0F7. */
+
+:root {
+  --ml-ink: #2e3440;
+  --ml-ink-deep: #242933;
+  --ml-indigo: #5b5bd6;
+  --ml-indigo-soft: #8f8ff0;
+  --ml-teal: #12a594;
+  --ml-teal-soft: #3fc9b8;
+  --ml-fur: #eef1f8;
+  --ml-fur-deep: #d5dcea;
+}
+
+/* Header and sidebar accents: ink bar, indigo links, teal for "active". */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--ml-ink);
+  --md-primary-fg-color--light: #4c566a;
+  --md-primary-fg-color--dark: var(--ml-ink-deep);
+  --md-primary-bg-color: var(--ml-fur);
+  --md-primary-bg-color--light: rgba(238, 241, 248, 0.7);
+  --md-accent-fg-color: var(--ml-teal);
+  --md-accent-fg-color--transparent: rgba(18, 165, 148, 0.1);
+  --md-typeset-a-color: var(--ml-indigo);
+  --md-code-bg-color: #f3f5fa;
+  --md-footer-bg-color: var(--ml-ink);
+  --md-footer-bg-color--dark: var(--ml-ink-deep);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 225;
+  --md-primary-fg-color: var(--ml-ink-deep);
+  --md-primary-fg-color--light: #4c566a;
+  --md-primary-fg-color--dark: #1b1f27;
+  --md-primary-bg-color: var(--ml-fur);
+  --md-primary-bg-color--light: rgba(238, 241, 248, 0.7);
+  --md-accent-fg-color: var(--ml-teal-soft);
+  --md-accent-fg-color--transparent: rgba(63, 201, 184, 0.12);
+  --md-typeset-a-color: var(--ml-indigo-soft);
+  --md-default-bg-color: #1b1f27;
+  --md-code-bg-color: #232833;
+  --md-footer-bg-color: #161a21;
+  --md-footer-bg-color--dark: #10131a;
+}
+
+/* The header logo is a wide mouse, not a square icon: give it room. */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 2rem;
+  width: auto;
+}
+
+/* Wordmark styling for the site title, echoing Mouse + Lite in the logo. */
+.md-header__title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Hero logo on the overview page. */
+.ml-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.5rem 0 2rem;
+}
+.ml-hero svg {
+  width: min(320px, 70%);
+  height: auto;
+}
+/* The logo's wordmark follows the site's palette, not the OS preference. */
+.ml-hero .ink {
+  fill: var(--md-default-fg-color);
+}
+.ml-hero .ml-tagline {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  color: var(--md-default-fg-color--light);
+  text-align: center;
+}
+
+/* Tables: MouseLite docs are table-heavy; tighten them and mark headers. */
+.md-typeset table:not([class]) {
+  font-size: 0.72rem;
+}
+.md-typeset table:not([class]) th {
+  background-color: var(--md-code-bg-color);
+  color: var(--md-default-fg-color);
+}
+.md-typeset table:not([class]) code {
+  white-space: nowrap;
+}
+
+/* Inline code in indigo-ish, like the "Lite" of the wordmark. */
+.md-typeset code {
+  border-radius: 4px;
+}
+.md-typeset a code {
+  color: var(--md-typeset-a-color);
+}
