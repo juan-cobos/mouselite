@@ -5,13 +5,10 @@ description = "Training and evaluation for MouseLite (RF-DETR)."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "mtmb>=0.1.0",
     "rfdetr[loggers,train,visual]>=1.9.0",
     "supervision>=0.29",
-    "mtmb",
 ]
-
-[tool.uv.sources]
-"mtmb" = { path = "../../mtmb" }
 
 [tool.ruff]
 extend = "../pyproject.toml"
