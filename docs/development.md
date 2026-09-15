@@ -95,8 +95,11 @@ and missing anchors, so run it before committing. The theme colours come from th
 logo and live in `docs/stylesheets/extra.css`; `docs/assets/icon.svg` is the single
 mouse cut out of `assets/logo.svg` for the header and favicon.
 
-To publish to GitHub Pages: `uvx --with mkdocs-material mkdocs gh-deploy`, then
-enable Pages on the `gh-pages` branch in the repository settings.
+Publishing is automatic: `.github/workflows/docs.yml` builds the site and deploys
+it to GitHub Pages on every push to `main` that touches `docs/` or `mkdocs.yml`
+(or on demand from the Actions tab). The repository's Pages source must be set to
+"GitHub Actions" once, under Settings → Pages. A strict-build failure blocks the
+deploy, so the live site never has a broken link.
 
 ## Releasing
 
