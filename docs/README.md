@@ -1,0 +1,17 @@
+# MouseLite documentation
+
+The [top-level README](../README.md) covers install, the CLI essentials and the
+Python API basics. The pages here go deeper.
+
+| Page | Read it when you want to… |
+| ---- | ------------------------- |
+| [Quick start](quick-start.md) | run one video, retrack it, try the demo |
+| [How it works](how-it-works.md) | understand what happens to a frame between the video and the export |
+| [COCO export](coco-export.md) | analyse `annotations.json` in your own code |
+| [Trackers](trackers.md) | pick a tracker and tune it for your recordings |
+| [CLI reference](cli.md) | see every command and option, including the ones the README skips |
+| [Python API](python-api.md) | drive the pipeline from Python |
+| [Development](development.md) | run the tests, lint, or change the package |
+
+Training and evaluation code for the released models lives in
+[`training/`](../training/README.md) and has its own README.
