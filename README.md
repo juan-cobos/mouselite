@@ -19,7 +19,7 @@ Three model kinds are available:
 
 ## Installation
 
-Requires Python ≥ 3.12.
+Requires Python ≥ 3.11.
 
 ```bash
 pip install mouselite
