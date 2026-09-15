@@ -1,32 +1,21 @@
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download
-from rfdetr import (
-    RFDETRKeypointPreview,
-    RFDETRLarge,
-    RFDETRMedium,
-    RFDETRNano,
-    RFDETRSegLarge,
-    RFDETRSegMedium,
-    RFDETRSegNano,
-    RFDETRSegSmall,
-    RFDETRSmall,
-)
 
 MODELS = {
     "detection": {
-        "nano": RFDETRNano,
-        "small": RFDETRSmall,
-        "medium": RFDETRMedium,
-        "large": RFDETRLarge,
+        "nano": "RFDETRNano",
+        "small": "RFDETRSmall",
+        "medium": "RFDETRMedium",
+        "large": "RFDETRLarge",
     },
     "segmentation": {
-        "nano": RFDETRSegNano,
-        "small": RFDETRSegSmall,
-        "medium": RFDETRSegMedium,
-        "large": RFDETRSegLarge,
+        "nano": "RFDETRSegNano",
+        "small": "RFDETRSegSmall",
+        "medium": "RFDETRSegMedium",
+        "large": "RFDETRSegLarge",
     },
-    "keypoints": RFDETRKeypointPreview,
+    "keypoints": "RFDETRKeypointPreview",
 }
 
 HF_REPO_ID = "mouselite/mouselite"  # TODO: placeholder for HF model weights repo
@@ -41,7 +30,9 @@ def get_model(
     batch_size: int = 1,
     compile: bool = False,
 ):
-    cls = MODELS[kind] if kind == "keypoints" else MODELS[kind][size]
+    import rfdetr
+
+    cls = getattr(rfdetr, MODELS[kind] if kind == "keypoints" else MODELS[kind][size])
     if checkpoint is not None:
         pretrain_weights = str(checkpoint)
     else:

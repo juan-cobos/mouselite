@@ -1,13 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-import supervision as sv
 import typer
-
-from mouselite.models import MODELS, get_model
-from mouselite.pipeline import Pipeline
-from mouselite.tracker import TRACKERS, get_tracker
-from mouselite.tracker import retrack as retrack_video
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -33,6 +27,12 @@ def run(
     show_progress: bool = True,
 ) -> None:
     """Run inference on `video_path`, writing an annotated video and a COCO export."""
+    import supervision as sv
+
+    from mouselite.models import get_model
+    from mouselite.pipeline import Pipeline
+    from mouselite.tracker import get_tracker
+
     model = get_model(
         kind,
         size=size,
@@ -82,6 +82,8 @@ def retrack(
     show_progress: bool = True,
 ) -> None:
     """Re-run tracking on a previously exported COCO dataset, without running inference."""
+    from mouselite.tracker import retrack as retrack_video
+
     tracker_kwargs = {
         "lost_track_buffer": lost_track_buffer,
         "minimum_iou_threshold": minimum_iou_threshold,
@@ -118,6 +120,8 @@ def app_command(
 @app.command("list-models")
 def list_models() -> None:
     """Print the available --kind values, and --size options for sized kinds."""
+    from mouselite.models import MODELS
+
     for kind, sizes in MODELS.items():
         typer.echo(f"{kind}: {', '.join(sizes)}" if isinstance(sizes, dict) else kind)
 
@@ -125,6 +129,8 @@ def list_models() -> None:
 @app.command("list-trackers")
 def list_trackers() -> None:
     """Print the available --tracker values."""
+    from mouselite.tracker import TRACKERS
+
     for name in TRACKERS:
         typer.echo(name)
 
