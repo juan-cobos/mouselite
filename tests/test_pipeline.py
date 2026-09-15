@@ -24,7 +24,23 @@ class FakeKeypointModel:
         )
 
 
+class EmptyEveryOtherModel(FakeKeypointModel):
+    """Returns one detection on even calls and nothing on odd calls."""
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+        self.calls += 1
+        if self.calls % 2 == 0:
+            return sv.KeyPoints.empty()
+        return super().predict(frame, threshold)
+
+
 class FakeTracker(BaseTracker):
+    def __init__(self) -> None:
+        self.updates = 0
+
     def reset(self) -> None:
         pass
 
@@ -34,6 +50,7 @@ class FakeTracker(BaseTracker):
         frame=None,
         timestamp=None,
     ) -> sv.Detections:
+        self.updates += 1
         detections.tracker_id = np.arange(len(detections))
         return detections
 
@@ -64,3 +81,23 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert "frame_index" in coco["images"][0]
     assert "keypoints" in coco["annotations"][0]
     assert coco["annotations"][0]["track_id"] == 0
+
+
+def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:
+    """top_k=1 never calls the tracker, and frames with no detections stay empty."""
+    video_path = tmp_path / "smoke.mp4"
+    make_video(video_path)
+
+    tracker = FakeTracker()
+    pipeline = Pipeline(model=EmptyEveryOtherModel(), tracker=tracker, top_k=1)
+    pipeline.run(video_path, output_dir=tmp_path / "output", show_progress=False)
+
+    assert tracker.updates == 0
+
+    annotations_path = tmp_path / "output" / "smoke_coco" / "annotations.json"
+    coco = json.loads(annotations_path.read_text())
+    assert len(coco["images"]) == 6
+    # one annotation per detected frame, none for the empty ones
+    assert len(coco["annotations"]) == 3
+    assert {a["track_id"] for a in coco["annotations"]} == {0}
+    assert {a["image_id"] for a in coco["annotations"]} == {1, 3, 5}

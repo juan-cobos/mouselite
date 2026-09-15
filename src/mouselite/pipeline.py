@@ -181,7 +181,12 @@ class Pipeline:
                 if self.top_k is not None and len(detections) > self.top_k:
                     top = detections.confidence.argsort()[::-1][: self.top_k]
                     detections = detections[top]
-                detections = self.tracker.update(detections, frame=frame)
+
+                # No need to run tracking when there's only one target
+                if self.top_k == 1:
+                    detections.tracker_id = np.zeros(len(detections), dtype=int)
+                else:
+                    detections = self.tracker.update(detections, frame=frame)
 
                 image_path = images_dir / f"{video_path.stem}_{frame_idx:06d}.jpg"
                 cv2.imwrite(str(image_path), frame)
