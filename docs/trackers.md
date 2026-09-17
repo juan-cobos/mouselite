@@ -48,15 +48,15 @@ Everything else is reachable from Python by passing keyword arguments through
 ### `lost_track_buffer` (all trackers, default 30)
 
 How many frames a track is kept alive with no matching detection before it is
-dropped and the animal, when it reappears, gets a new id. The trackers convert it
-to seconds as `lost_track_buffer / 30` and count elapsed time at `frame_rate`, so
-the value means "frames at 30 fps" whatever the video's rate — which is why `run`
-and `retrack` pass the video's real frame rate as `frame_rate`.
+dropped and the animal, when it reappears, gets a new id. It counts the frames the
+tracker actually sees: MouseLite never tells the tracker the video's frame rate, so
+the same value is a shorter time at 60 fps than at 30, and shorter again with
+`--every 2`.
 
 Mice disappear under nests, behind each other and into corners. If ids keep
-changing after a short occlusion, raise it (`--lost-track-buffer 90` is a second
-and a half at 60 fps). Too high and an animal that genuinely left can absorb the
-next detection that appears near where it was.
+changing after a short occlusion, raise it (`--lost-track-buffer 90` is three
+seconds at 30 fps with `--every 1`). Too high and an animal that genuinely left can
+absorb the next detection that appears near where it was.
 
 ### `minimum_iou_threshold` (default 0.1–0.3, per tracker)
 

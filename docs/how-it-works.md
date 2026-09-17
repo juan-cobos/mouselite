@@ -47,8 +47,7 @@ Points worth knowing:
 - **`every` is a stride, not a skip.** Inference and the export only happen on
   frames where `frame_idx % every == 0`, but the annotated video keeps *every* frame:
   in-between frames are drawn with the last predictions. The export therefore has
-  one image per inference frame, and `run` records `video_fps / every` in the
-  export's `info.fps` so a later `retrack` replays those frames at the right speed.
+  one image per inference frame, and the tracker only ever sees those frames.
 - **Keypoints are tracked as boxes.** RF-DETR's keypoint model returns
   `sv.KeyPoints` with the model's own box in `data["xyxy"]`. `_keypoints_to_detections`
   turns that into `sv.Detections` using that box — not one fitted around the
@@ -91,8 +90,8 @@ Two consequences of replaying from COCO rather than from the model:
   --tracker bytetrack` would have produced. Tune with `retrack`, but expect small
   differences if you then re-run inference with the tracker you picked.
 - **Only exported frames exist.** If you ran with `--every 3`, the retracked video
-  has a third of the frames at a third of the frame rate. That is what the recorded
-  `info.fps` is for.
+  has a third of the frames. It is always written at 30 fps, so it plays faster or
+  slower than the source unless the source was 30 fps with `--every 1`.
 
 Trackers may drop or reorder detections, so `retrack` tags each one with its row
 index in the export before `update` and uses the surviving indices to write

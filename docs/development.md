@@ -44,7 +44,7 @@ with fakes:
 | File | Covers |
 | ---- | ------ |
 | `tests/test_pipeline.py` | `Pipeline.run` end to end with a fake keypoint model and tracker: export layout, `frame_index`, keypoints, `every`, the `top_k=1` no-tracking path |
-| `tests/test_tracker.py` | `retrack` on a hand-built export: video written, `track_id` written back, recorded fps honoured, keypoints carried through to the tracker, `read_fps` |
+| `tests/test_tracker.py` | `retrack` on a hand-built export: video written, `track_id` written back, keypoints carried through to the tracker |
 | `tests/test_cli.py` | `list-models` / `list-trackers` via typer's `CliRunner` |
 
 `FakeKeypointModel` / `FakeTracker` in `tests/test_pipeline.py` are the reference for

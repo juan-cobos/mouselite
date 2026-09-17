@@ -6,7 +6,7 @@ The CLI is a thin wrapper over three importable pieces. Nothing is re-exported f
 ```python
 from mouselite.models import MODELS, get_model
 from mouselite.pipeline import MetaAnnotator, Pipeline
-from mouselite.tracker import TRACKERS, get_tracker, read_fps, retrack
+from mouselite.tracker import TRACKERS, get_tracker, retrack
 ```
 
 `mouselite.tracker` imports `trackers` (and so torch) at module level; `mouselite.models`
@@ -56,15 +56,10 @@ model = get_model("detection", size="small", checkpoint="runs/best.pt")
 ### `get_tracker(name, **kwargs)`
 
 Returns `TRACKERS[name](**kwargs)`. Raises `ValueError` listing the valid names for
-an unknown `name`. Pass `frame_rate` (the video's fps) so time-based settings such as
-`lost_track_buffer` are interpreted correctly; `run` and `retrack` always do.
+an unknown `name`. `run` calls it with no keyword arguments; frame-based settings
+such as `lost_track_buffer` count the frames the tracker actually sees.
 
-### `read_fps(annotations_path, default=30.0)`
-
-Frame rate recorded in an export's `info.fps`, or `default` if the file has no
-`info` block or no `fps` in it.
-
-### `retrack(annotations_path, tracker, output_dir="output", fps=None, show_progress=True, **tracker_kwargs) -> Path`
+### `retrack(annotations_path, tracker, output_dir="output", show_progress=True, **tracker_kwargs) -> Path`
 
 Replay an export through a tracker; see [How it works](how-it-works.md#the-retrack-path)
 for the mechanics and caveats.
@@ -73,9 +68,8 @@ for the mechanics and caveats.
 | --------- | ------- |
 | `annotations_path` | the `annotations.json`; `images/` must be beside it |
 | `tracker` | a key of `TRACKERS` (a name, not an instance) |
-| `output_dir` | where `<stem>_retracked.mp4` is written |
-| `fps` | output video frame rate; `None` → `read_fps(annotations_path)` |
-| `**tracker_kwargs` | forwarded to the tracker constructor along with `frame_rate=fps` |
+| `output_dir` | where `<stem>_retracked.mp4` is written, at 30 fps |
+| `**tracker_kwargs` | forwarded to the tracker constructor |
 
 Returns the path of the retracked video. Side effect: `track_id` is rewritten on
 every annotation in `annotations_path`.
@@ -104,23 +98,20 @@ an `images/` folder beside it. `show` opens an OpenCV window; `hud` burns in an 
 counter.
 
 ```python
-import supervision as sv
 from mouselite.models import get_model
 from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker
 
 model = get_model("keypoints")
-fps = sv.VideoInfo.from_video_path("cage.mp4").fps
-tracker = get_tracker("ocsort", frame_rate=fps, lost_track_buffer=60)
+tracker = get_tracker("ocsort", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
 video = pipeline.run("cage.mp4", output_dir="output")
 export = video.parent / "cage_coco" / "annotations.json"
 ```
 
-To process several videos with one loaded model, build the `Pipeline` once per video
-(the tracker's `frame_rate` may differ) or reuse it if the frame rates match — `run`
-resets the tracker either way.
+To process several videos with one loaded model, reuse the `Pipeline`: `run` resets
+the tracker each time.
 
 ### `MetaAnnotator`
 
@@ -146,7 +137,7 @@ from mouselite.pipeline import MetaAnnotator, _keypoints_to_detections
 from mouselite.tracker import get_tracker
 
 model = get_model("keypoints")
-tracker = get_tracker("bytetrack", frame_rate=30)
+tracker = get_tracker("bytetrack")
 annotator = MetaAnnotator()
 
 for frame in sv.get_video_frames_generator("cage.mp4"):

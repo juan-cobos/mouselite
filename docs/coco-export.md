@@ -13,8 +13,8 @@ output/
 ```
 
 `annotations.json` is a standard [COCO](https://cocodataset.org/#format-data)
-detection/keypoint file with three MouseLite additions: `info.fps`,
-`images[].frame_index` and `annotations[].track_id`. Anything that reads COCO
+detection/keypoint file with two MouseLite additions: `images[].frame_index` and
+`annotations[].track_id`. Anything that reads COCO
 (supervision, pycocotools, FiftyOne, CVAT, …) can load it and will ignore the
 extras.
 
@@ -22,7 +22,7 @@ extras.
 
 ```json
 {
-  "info": { "fps": 15.0 },
+  "info": {},
   "licenses": [],
   "categories": [
     { "id": 1, "name": "mouse", "supercategory": "common-objects" }
@@ -47,12 +47,6 @@ extras.
   ]
 }
 ```
-
-### `info`
-
-| Field | Meaning |
-| ----- | ------- |
-| `fps` | Frame rate of the *exported* frames: the source video's fps divided by `--every`. `retrack` reads this to write its video at the right speed. If an export has no `info.fps` (hand-built, or from a build before it was recorded), `retrack` assumes 30. |
 
 ### `images`
 
@@ -124,7 +118,8 @@ xy, visible = kp[..., :2], kp[..., 2] > 0
 ```
 
 Time in seconds is `frame_index / source_fps`, where `source_fps` is the original
-video's frame rate (`info.fps * every`), not `info.fps`.
+video's frame rate. The export does not record it; read it from the video
+(`sv.VideoInfo.from_video_path(path).fps`).
 
 ### With supervision
 

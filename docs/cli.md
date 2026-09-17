@@ -66,8 +66,8 @@ Applied in this order, on every inference frame:
 | ------ | ------- | ------- |
 | `--tracker` | `ocsort` | One of `list-trackers`. See [Trackers](trackers.md). |
 
-`run` constructs the tracker with only `frame_rate` set (to the video's fps). To pass
-other tracker arguments, use `retrack` or the [Python API](python-api.md).
+`run` constructs the tracker with its defaults. To pass tracker arguments, use
+`retrack` or the [Python API](python-api.md).
 
 ### Frames and output
 
@@ -105,15 +105,14 @@ mouselite retrack ANNOTATIONS_PATH --tracker TRACKER [OPTIONS]
 Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`,
 with its `images/` folder beside it) through a fresh tracker. No model is loaded.
 
-Writes `<output-dir>/<stem>_retracked.mp4`, where `<stem>` is the export folder's
-name minus `_coco`, and rewrites `track_id` on every annotation **in place**.
+Writes `<output-dir>/<stem>_retracked.mp4` (at 30 fps), where `<stem>` is the export
+folder's name minus `_coco`, and rewrites `track_id` on every annotation **in place**.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
 | `--tracker` | *required* | One of `list-trackers`. |
 | `--output-dir` | `output` | Where the retracked video goes. |
-| `--fps` | from the export | Frame rate for the output video. `run` records the exported frame rate in `info.fps`; if it is missing, 30 is used. |
-| `--lost-track-buffer N` | tracker's (30) | Frames (at 30 fps) a track survives without a match. |
+| `--lost-track-buffer N` | tracker's (30) | Frames a track survives without a match. |
 | `--minimum-iou-threshold X` | tracker's (0.1–0.3) | Minimum IoU to match a detection to a track. Not accepted by `botsort`, `cbiou` or `mcbyte`, which split it into several arguments. |
 | `--show-progress` / `--no-show-progress` | on | Progress bar. |
 
