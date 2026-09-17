@@ -21,6 +21,9 @@ dependencies = [
 app = [
     "gradio>=6.0.0",
 ]
+train = [
+    "rfdetr[train,loggers,visual]",
+]
 
 [project.scripts]
 mouselite = "mouselite.cli:main"

@@ -91,6 +91,46 @@ def retrack(
     typer.echo(f"wrote {output}")
 
 
+@app.command()
+def train(
+    dataset_dir: Path,
+    kind: Annotated[str, typer.Option(help="One of the kinds from list-models.")],
+    size: str = "medium",
+    weights: Annotated[
+        str,
+        typer.Option(help="`base` (rfdetr pretrained), `mouselite`, or a checkpoint path."),
+    ] = "base",
+    output_dir: Path = Path("output/train"),
+    epochs: int = 10,
+    batch_size: int = 4,
+    lr: float | None = None,
+    resolution: int | None = None,
+    device: str | None = None,
+) -> None:
+    r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
+    try:
+        from mouselite.train import train as train_model
+    except ImportError as exc:  # rfdetr train/visual extras are optional
+        typer.echo(
+            f"{exc}\nTraining needs extras: install with `pip install mouselite[train]`.",
+            err=True,
+        )
+        raise typer.Exit(1) from exc
+
+    extra = {"lr": lr, "resolution": resolution, "device": device}
+    train_model(
+        dataset_dir,
+        kind,
+        size=size,
+        weights=weights,
+        output_dir=output_dir,
+        epochs=epochs,
+        batch_size=batch_size,
+        **{k: v for k, v in extra.items() if v is not None},
+    )
+    typer.echo(f"wrote checkpoints and metrics.png to {output_dir}")
+
+
 @app.command("app")
 def app_command(
     share: bool = True,
