@@ -77,7 +77,7 @@ Common options:
 | `--kind`           | *required*  | `detection`, `segmentation` or `keypoints`                   |
 | `--size`           | `medium`    | model size; ignored by `keypoints`                           |
 | `--checkpoint`     | —           | path to your own weights, skipping the Hub download          |
-| `--tracker`        | `bytetrack` | tracking algorithm (see `list-trackers`)                     |
+| `--tracker`        | `ocsort`    | tracking algorithm (see `list-trackers`)                     |
 | `--threshold`      | `0.5`       | minimum confidence for a prediction to be kept               |
 | `--nms-threshold`  | `0.5`       | drop the lower-scoring of two predictions overlapping above this |
 | `--top-k`          | —           | keep only the N highest-scoring predictions per frame        |

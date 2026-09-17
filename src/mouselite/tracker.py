@@ -18,10 +18,10 @@ from trackers import (
 from mouselite.pipeline import MetaAnnotator
 
 TRACKERS = {
+    "sort": SORTTracker,
     "botsort": BoTSORTTracker,
     "ocsort": OCSORTTracker,
     "bytetrack": ByteTrackTracker,
-    "sort": SORTTracker,
     "cbiou": CBIoUTracker,
     "mcbyte": McByteTracker,
 }

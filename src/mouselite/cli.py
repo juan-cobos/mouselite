@@ -12,7 +12,7 @@ def run(
     kind: Annotated[str, typer.Option(help="One of the kinds from list-models.")],
     size: str = "medium",
     checkpoint: Path | None = None,
-    tracker: str = "bytetrack",
+    tracker: str = "ocsort",
     threshold: float = 0.5,
     nms_threshold: float = 0.5,
     top_k: int | None = None,
