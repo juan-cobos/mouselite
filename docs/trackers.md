@@ -8,28 +8,30 @@ algorithms by name. It adds nothing on top: `get_tracker(name, **kwargs)` is
 
 | Name | Class | Uses | Notes |
 | ---- | ----- | ---- | ----- |
-| `bytetrack` | `ByteTrackTracker` | boxes + confidence | **Default for `run`.** Two-stage association: high-confidence detections first, then low-confidence ones against what's left. Fast, robust to flicker. |
-| `ocsort` | `OCSORTTracker` | boxes | Observation-centric SORT: interpolates through occlusions and penalises direction changes. Often the better choice for two mice that cross. Default in the demo. |
+| `sort` | `SORTTracker` | boxes | The original Kalman + Hungarian matcher. Simplest and cheapest. |
+| `bytetrack` | `ByteTrackTracker` | boxes + confidence | Two-stage association: high-confidence detections first, then low-confidence ones against what's left. Fast, robust to flicker. |
+| `ocsort` | `OCSORTTracker` | boxes | Observation-centric SORT: interpolates through occlusions and penalises direction changes. |
 | `botsort` | `BoTSORTTracker` | boxes + confidence + camera motion | ByteTrack plus camera-motion compensation (`sparseOptFlow` by default). Costs extra per frame; useful for hand-held or vibrating cameras, wasted on a fixed one. |
-| `sort` | `SORTTracker` | boxes | The original Kalman + Hungarian matcher. Simplest and cheapest; loses identity on any occlusion. |
 | `cbiou` | `CBIoUTracker` | boxes + confidence | Cascaded-buffered IoU: expands boxes before matching so fast movers still overlap their previous position. |
-| `mcbyte` | `McByteTracker` | boxes + confidence (+ masks) | ByteTrack extended with an optional mask-based manager. Mask matching is off by default (`enable_mask_manager=False`); MouseLite does not turn it on. |
+| `mcbyte` | `McByteTracker` | boxes + confidence (+ masks) | ByteTrack extended with an optional mask-based manager. Mask matching is off by default (`enable_mask_manager=False`). |
 
 ## Which one
 
 - **One animal**: it doesn't matter. Pass `--top-k 1` and the pipeline skips the
   tracker entirely (see [How it works](how-it-works.md)).
-- **Two or more animals, fixed camera**: start with `bytetrack`. If identities swap
-  when the animals huddle or cross, try `ocsort`, which is the one the demo defaults
-  to for that reason.
+- **Two or more animals, fixed camera**: `ocsort`, the default. It interpolates
+  through occlusions and penalises sudden direction changes, which is what keeps
+  identities from swapping when the animals huddle or cross. If tracks fragment
+  instead — ids changing without any crossing — try `bytetrack`, whose
+  low-confidence second pass is more forgiving of detection flicker.
 - **Moving camera**: `botsort`.
 
 `retrack` exists so you can try these on the same predictions without paying for
 inference again:
 
 ```bash
-mouselite run video.mp4 --kind keypoints --top-k 2            # bytetrack, once
-mouselite retrack output/video_coco/annotations.json --tracker ocsort
+mouselite run video.mp4 --kind keypoints --top-k 2            # ocsort, once
+mouselite retrack output/video_coco/annotations.json --tracker bytetrack
 mouselite retrack output/video_coco/annotations.json --tracker botsort
 ```
 
@@ -74,6 +76,3 @@ constructor.
 | `minimum_consecutive_frames` | all | 2 (`ocsort`, `sort`: 3) | frames a new track must be matched before it is confirmed and gets an id; before that its detections export as `track_id = -1` |
 | `high_conf_det_threshold` | ByteTrack family, `ocsort` | 0.6 | split between the first- and second-stage association |
 | `enable_cmc`, `cmc_method` | `botsort`, `mcbyte` | `True`, `"sparseOptFlow"` | camera-motion compensation |
-
-Run `python -c "import inspect, trackers; print(inspect.signature(trackers.OCSORTTracker))"`
-for the full list of a given tracker.

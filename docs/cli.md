@@ -64,7 +64,7 @@ Applied in this order, on every inference frame:
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--tracker` | `bytetrack` | One of `list-trackers`. See [Trackers](trackers.md). |
+| `--tracker` | `ocsort` | One of `list-trackers`. See [Trackers](trackers.md). |
 
 `run` constructs the tracker with only `frame_rate` set (to the video's fps). To pass
 other tracker arguments, use `retrack` or the [Python API](python-api.md).
