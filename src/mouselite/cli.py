@@ -27,8 +27,6 @@ def run(
     show_progress: bool = True,
 ) -> None:
     """Run inference on `video_path`, writing an annotated video and a COCO export."""
-    import supervision as sv
-
     from mouselite.models import get_model
     from mouselite.pipeline import Pipeline
     from mouselite.tracker import get_tracker
@@ -41,8 +39,7 @@ def run(
         batch_size=batch_size,
         compile=compile,
     )
-    fps = sv.VideoInfo.from_video_path(str(video_path)).fps
-    tracker_instance = get_tracker(tracker, frame_rate=fps)
+    tracker_instance = get_tracker(tracker)
     pipeline = Pipeline(
         model,
         tracker_instance,
@@ -67,13 +64,9 @@ def retrack(
     annotations_path: Path,
     tracker: Annotated[str, typer.Option(help="One of the trackers from list-trackers.")],
     output_dir: Path = Path("output"),
-    fps: Annotated[
-        float | None,
-        typer.Option(help="Defaults to the frame rate recorded in the export, else 30."),
-    ] = None,
     lost_track_buffer: Annotated[
         int | None,
-        typer.Option(help="Frames a track survives without a match (at 30 fps)."),
+        typer.Option(help="Frames a track survives without a match."),
     ] = None,
     minimum_iou_threshold: Annotated[
         float | None,
@@ -92,7 +85,6 @@ def retrack(
         annotations_path,
         tracker,
         output_dir=output_dir,
-        fps=fps,
         show_progress=show_progress,
         **{k: v for k, v in tracker_kwargs.items() if v is not None},
     )

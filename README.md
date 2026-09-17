@@ -108,16 +108,14 @@ mouselite retrack output/video_coco/annotations.json --tracker ocsort
 
 Writes `output/video_retracked.mp4` and updates each annotation's `track_id` in
 `annotations.json` in place, so the export always reflects the last tracking pass
-(`-1` for detections the tracker did not confirm). The frame rate is read from the
-export (`run` records it, divided by `--every`), falling back to 30; pass `--fps` to
-override.
+(`-1` for detections the tracker did not confirm).
 
 The two knobs that matter most for mice are how long a track survives an occlusion
 and how loosely a detection may match it:
 
 | Option                    | Default (tracker's) | Meaning                                              |
 | ------------------------- | ------------------- | ---------------------------------------------------- |
-| `--lost-track-buffer`     | `30`                | frames a track is kept alive without a match, at 30 fps |
+| `--lost-track-buffer`     | `30`                | frames a track is kept alive without a match          |
 | `--minimum-iou-threshold` | `0.1`–`0.3`         | minimum IoU to match a detection to an existing track |
 
 Both are forwarded as-is to the tracker class.
@@ -159,15 +157,12 @@ The CLI is a thin wrapper over three pieces: a model, a tracker, and a `Pipeline
 that joins them.
 
 ```python
-import supervision as sv
-
 from mouselite.models import get_model
 from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker
 
 model = get_model("keypoints")
-fps = sv.VideoInfo.from_video_path("video.mp4").fps
-tracker = get_tracker("ocsort", frame_rate=fps)
+tracker = get_tracker("ocsort")
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2)
 annotated_path = pipeline.run("video.mp4", output_dir="output")
@@ -236,7 +231,6 @@ retracked_path = retrack(
     "output/video_coco/annotations.json",
     "ocsort",
     output_dir="output",
-    fps=None,               # recorded by `run`, else 30
     lost_track_buffer=90,   # any further kwargs go to the tracker class
 )
 ```

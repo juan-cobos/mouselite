@@ -33,21 +33,10 @@ def get_tracker(name: str, **kwargs):
     return TRACKERS[name](**kwargs)
 
 
-DEFAULT_FPS = 30.0
-
-
-def read_fps(annotations_path: str | Path, default: float = DEFAULT_FPS) -> float:
-    """Frame rate recorded in a COCO export's `info` block, or `default` if it has none."""
-    with open(annotations_path) as f:
-        info = json.load(f).get("info") or {}
-    return float(info.get("fps", default))
-
-
 def retrack(
     annotations_path: str | Path,
     tracker: str,
     output_dir: str | Path = "output",
-    fps: float | None = None,
     show_progress: bool = True,
     **tracker_kwargs,
 ) -> Path:
@@ -55,10 +44,8 @@ def retrack(
 
     Writes the retracked video and updates each annotation's `track_id` in place.
     `tracker` is a name from `TRACKERS`; `tracker_kwargs` go to its constructor.
-    `fps` defaults to the frame rate recorded in the export, else 30.
     """
     annotations_path = Path(annotations_path)
-    fps = fps or read_fps(annotations_path)
     dataset = sv.DetectionDataset.from_coco(
         images_directory_path=str(annotations_path.parent / "images"),
         annotations_path=str(annotations_path),
@@ -69,7 +56,7 @@ def retrack(
     annotations: dict[str, list[dict]] = {}
     for annotation in coco["annotations"]:
         annotations.setdefault(file_names[annotation["image_id"]], []).append(annotation)
-    tracker = get_tracker(tracker, frame_rate=fps, **tracker_kwargs)
+    tracker = get_tracker(tracker, **tracker_kwargs)
     annotator = MetaAnnotator()
 
     stem = annotations_path.parent.name.removesuffix("_coco")
@@ -81,7 +68,7 @@ def retrack(
     video_info = sv.VideoInfo(
         width=first_frame.shape[1],
         height=first_frame.shape[0],
-        fps=fps,
+        fps=30,
     )
 
     with sv.VideoSink(target_path=str(target), video_info=video_info) as sink:
