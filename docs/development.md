@@ -76,9 +76,6 @@ runs both on staged files.
   expose a new option everywhere.
 - `gradio` is optional. Anything imported by `app.py` must not be imported by the
   rest of the package.
-- Ignored by git: `output/`, `runs/`, `.gradio/` and `scripts/`. The last pattern
-  matches at any depth, so the files already in `training/scripts/` are tracked but
-  a *new* file there needs `git add -f`.
 
 ## Docs
 
@@ -100,23 +97,3 @@ it to GitHub Pages on every push to `main` that touches `docs/` or `mkdocs.yml`
 (or on demand from the Actions tab). The repository's Pages source must be set to
 "GitHub Actions" once, under Settings → Pages. A strict-build failure blocks the
 deploy, so the live site never has a broken link.
-
-## Releasing
-
-1. Bump `version` in `pyproject.toml`.
-2. `uv build` produces the wheel and sdist under `dist/` with the `uv_build` backend.
-3. `uv publish`.
-
-Model weights are not part of the package; they are fetched from the Hugging Face
-repo named by `HF_REPO_ID` in `models.py`, with file names from `WEIGHTS`. Changing
-either is a code change, not a release step.
-
-## Adding a model kind
-
-1. Add the `rfdetr` class name(s) to `MODELS` in `models.py`.
-2. If it is a sized kind, follow the `{size: class}` dict shape; if not, a bare
-   string (as `keypoints` does) — `get_model`, `list-models` and the demo's
-   size-toggle all branch on that.
-3. Upload weights named per `WEIGHTS` to the Hub repo.
-4. If the model returns something other than `sv.Detections` / `sv.KeyPoints`, add a
-   conversion next to `_keypoints_to_detections` and call it from `Pipeline.run`.
