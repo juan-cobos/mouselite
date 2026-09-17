@@ -1,34 +1,43 @@
 # Quick start
 
-We recommend [uv](https://docs.astral.sh/uv/) — it takes care of the Python version
-(≥ 3.11) and the environment. Add MouseLite to a project with
+MouseLite runs from the terminal through [uv](https://docs.astral.sh/uv/), which
+takes care of Python for you: no separate Python install, no environments. Install
+uv once:
+
+=== "macOS / Linux"
+
+    Open **Terminal** and paste:
+
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+
+=== "Windows"
+
+    Open **PowerShell** and paste:
+
+    ```powershell
+    powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
+
+Close and reopen the terminal so it picks up the new command.
 
 ```bash
-uv add mouselite
+uvx mouselite --help
 ```
 
-or install it into an environment of your own with `pip install mouselite`. Either
-way you get a `mouselite` command.
+There is nothing else to install; the rest of this page prefixes every command with
+`uvx` for that reason.
 
-If you don't want to install anything, `uvx` runs the command straight from a cache:
+??? note "Already have a Python environment?"
 
-```bash
-uvx mouselite run video.mp4 --kind keypoints --top-k 2
-```
-
-is the same as
-
-```bash
-mouselite run video.mp4 --kind keypoints --top-k 2
-```
-
-after installing. The rest of this page shows the installed form; prefix with `uvx`
-if you went the other way.
+    `pip install mouselite` (or `uv add mouselite` in a uv project) gives you a
+    `mouselite` command, and you can drop the `uvx` prefix from the examples below.
 
 Run the pose model on a video with two mice:
 
 ```bash
-mouselite run video.mp4 --kind keypoints --top-k 2
+uvx mouselite run video.mp4 --kind keypoints --top-k 2
 ```
 
 The first run downloads the weights from the Hugging Face Hub; after that it goes
@@ -46,15 +55,15 @@ Open the video to check the result. If the two animals swap ids when they cross,
 try another tracker on the same predictions, no inference this time:
 
 ```bash
-mouselite retrack output/video_coco/annotations.json --tracker ocsort
+uvx mouselite retrack output/video_coco/annotations.json --tracker bytetrack
 ```
 
 That writes `output/video_retracked.mp4` and updates `track_id` in `annotations.json`.
 
 ## The demo
 
-The same run/retrack loop is available as a browser UI. The Gradio dependency is an
-optional extra, which `uvx` can pull in without installing anything:
+The same run/retrack loop is available as a browser UI. It needs the `app` extra,
+which `uvx` pulls in the same way:
 
 ```bash
 uvx --from "mouselite[app]" mouselite app
