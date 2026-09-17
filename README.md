@@ -19,34 +19,13 @@ Three model kinds are available:
 
 ## Installation
 
-Requires Python ≥ 3.11.
-
 ```bash
-pip install mouselite
+pip install mouselite          # or: uv add mouselite
+pip install "mouselite[app]"   # with the Gradio demo
 ```
 
-With [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv add mouselite
-```
-
-The Gradio demo is an optional extra:
-
-```bash
-pip install "mouselite[app]"
-```
-
-From a checkout:
-
-```bash
-git clone https://github.com/juan-cobos/mouselite
-cd mouselite
-uv sync --extra app
-```
-
-Model weights are downloaded from the Hugging Face Hub on first use and cached;
-pass `--checkpoint` to use your own instead.
+Requires Python ≥ 3.11. Model weights are downloaded from the Hugging Face Hub on
+first use and cached.
 
 ## CLI
 
