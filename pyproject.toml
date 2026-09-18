@@ -27,6 +27,7 @@ convert = [
 ]
 train = [
     "rfdetr[train,loggers,visual]",
+    "mouselite[convert]",
 ]
 
 [project.scripts]

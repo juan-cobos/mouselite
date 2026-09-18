@@ -2244,7 +2244,9 @@ convert = [
     { name = "tables" },
 ]
 train = [
+    { name = "pandas" },
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
+    { name = "tables" },
 ]
 
 [package.dev-dependencies]
@@ -2258,6 +2260,7 @@ dev = [
 requires-dist = [
     { name = "gradio", marker = "extra == 'app'", specifier = ">=6.0.0" },
     { name = "huggingface-hub", specifier = ">=1.27.0" },
+    { name = "mouselite", extras = ["convert"], marker = "extra == 'train'" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "pandas", marker = "extra == 'convert'", specifier = ">=2.0.0" },
     { name = "rfdetr", specifier = ">=1.9.2" },

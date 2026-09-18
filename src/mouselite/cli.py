@@ -120,8 +120,9 @@ def train(
 ) -> None:
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
+        from mouselite.format import convert
         from mouselite.train import train as train_model
-    except ImportError as exc:  # rfdetr train/visual extras are optional
+    except ImportError as exc:  # the train extra (which includes convert) is optional
         typer.echo(
             f"{exc}\nTraining needs extras: install with `pip install mouselite[train]`.",
             err=True,
@@ -136,14 +137,6 @@ def train(
                 err=True,
             )
             raise typer.Exit(1)
-        try:
-            from mouselite.format import convert
-        except ImportError as exc:  # pandas/tables are optional
-            typer.echo(
-                f"{exc}\nInstall the extra with `pip install mouselite[convert]`.",
-                err=True,
-            )
-            raise typer.Exit(1) from exc
         dataset_dir = convert(
             dataset_dir, output_dir / "dataset", from_format, symlink=symlink
         )
