@@ -74,13 +74,6 @@ Then run your video with the new weights:
 mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_best_ema.pth
 ```
 
-!!! warning "Train for more than 10 epochs"
-
-    For `keypoints`, RF-DETR only starts tracking the best checkpoint after epoch 10,
-    because early pose metrics are too noisy to compare. A run of 10 epochs or fewer
-    leaves `checkpoint_best_ema.pth` as the untrained initial snapshot, which predicts
-    nothing. Use `last_ema.pth` from such a run, or train longer.
-
 ## Options
 
 | Option | Default | Meaning |
@@ -99,11 +92,3 @@ mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_be
 
 Anything RF-DETR's `train` accepts beyond these — `keypoint_oks_sigmas`,
 `grad_accum_steps`, … — is reachable from the [Python API](python-api.md#mouselitetrain).
-
-## The paper's training code
-
-The runs behind the released weights — every size of every kind, plus the DeepLabCut
-SuperAnimal baseline they are compared with — live in
-[`paper/`](https://github.com/juan-cobos/mouselite/tree/main/paper), a separate
-uv project with its own README. That is for reproducing the paper; `mouselite train`
-is for adapting the models to your data.
