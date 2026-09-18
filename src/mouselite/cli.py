@@ -106,6 +106,17 @@ def train(
     lr: float | None = None,
     resolution: int | None = None,
     device: str | None = None,
+    from_format: Annotated[
+        str | None,
+        typer.Option(
+            "--from",
+            help="Convert `dataset_dir` from this format first (see list-formats).",
+        ),
+    ] = None,
+    symlink: Annotated[
+        bool,
+        typer.Option(help="With --from: symlink the images instead of copying them."),
+    ] = True,
 ) -> None:
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
@@ -116,6 +127,27 @@ def train(
             err=True,
         )
         raise typer.Exit(1) from exc
+
+    if from_format is not None:
+        if kind == "segmentation":
+            typer.echo(
+                f"--from {from_format} is not supported for --kind segmentation: "
+                "pose formats carry keypoints, not masks.",
+                err=True,
+            )
+            raise typer.Exit(1)
+        try:
+            from mouselite.format import convert
+        except ImportError as exc:  # pandas/tables are optional
+            typer.echo(
+                f"{exc}\nInstall the extra with `pip install mouselite[convert]`.",
+                err=True,
+            )
+            raise typer.Exit(1) from exc
+        dataset_dir = convert(
+            dataset_dir, output_dir / "dataset", from_format, symlink=symlink
+        )
+        typer.echo(f"converted {from_format} dataset to {dataset_dir}")
 
     extra = {"lr": lr, "resolution": resolution, "device": device}
     train_model(
@@ -164,6 +196,22 @@ def list_trackers() -> None:
     from mouselite.tracker import TRACKERS
 
     for name in TRACKERS:
+        typer.echo(name)
+
+
+@app.command("list-formats")
+def list_formats() -> None:
+    r"""Print the dataset formats `train --from` accepts. Needs `mouselite\[convert]`."""
+    try:
+        from mouselite.format import FORMATS
+    except ImportError as exc:  # pandas/tables are optional
+        typer.echo(
+            f"{exc}\nInstall the extra with `pip install mouselite[convert]`.",
+            err=True,
+        )
+        raise typer.Exit(1) from exc
+
+    for name in FORMATS:
         typer.echo(name)
 
 

@@ -21,6 +21,10 @@ dependencies = [
 app = [
     "gradio>=6.0.0",
 ]
+convert = [
+    "pandas>=2.0.0",
+    "tables>=3.9.0",
+]
 train = [
     "rfdetr[train,loggers,visual]",
 ]
