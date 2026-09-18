@@ -1,18 +1,19 @@
-# MouseLite training
+# MouseLite paper
 
 Training and evaluation code behind the MouseLite paper: fine-tuning RF-DETR
 (detection, segmentation and the keypoints-preview head) and the DeepLabCut
 SuperAnimal baseline on the Multi-Task Mouse Behaviour Dataset, plus the
 scripts that scored them.
 
-If you just want to run the released models, use the `mouselite` package at
-the repository root instead — this directory is for reproducing the paper,
-not for inference.
+If you just want to run the released models, or fine-tune them on your own
+recordings, use the `mouselite` package at the repository root instead
+(`mouselite run`, `mouselite train`) — this directory is for reproducing the
+paper.
 
 ## Layout
 
 ```
-training/
+paper/
 ├── train.py            train the RF-DETR keypoints-preview model
 ├── train_all_kind.py   train every released detection/segmentation size
 ├── eval.py             score an RF-DETR run's best checkpoint
@@ -41,6 +42,6 @@ uv sync --project dlc                      # DeepLabCut side
 uv run --project dlc python train_dlc.py
 ```
 
-Always run from this directory (`training/`), including the `--project dlc`
+Always run from this directory (`paper/`), including the `--project dlc`
 commands: `src.data` derives every path (splits, runs) from the working
 directory, so invoking from `dlc/` itself would land them in the wrong place.

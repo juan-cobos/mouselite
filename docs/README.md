@@ -24,4 +24,4 @@ Python API basics. The pages here go deeper.
 | [Development](development.md) | run the tests, lint, or change the package |
 
 Training and evaluation code for the released models lives in
-[`training/`](https://github.com/juan-cobos/mouselite/tree/main/paper) and has its own README.
+[`paper/`](https://github.com/juan-cobos/mouselite/tree/main/paper) and has its own README.

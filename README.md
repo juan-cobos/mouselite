@@ -249,7 +249,7 @@ retracked_path = retrack(
 To adapt the models to your own recordings, use `mouselite train` above — from a COCO
 dataset or straight from a DeepLabCut project. The code behind the *released* models
 — fine-tuning RF-DETR and the DeepLabCut SuperAnimal baseline, plus the scripts that
-scored them — lives in [`training/`](training/README.md). It is for reproducing the
+scored them — lives in [`paper/`](paper/README.md). It is for reproducing the
 paper; to just run the models, use the package above.
 
 ## Acknowledgements

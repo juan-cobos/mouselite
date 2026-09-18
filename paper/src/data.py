@@ -32,7 +32,7 @@ LOO_VALID_OVERRIDE = {"direct_interaction": "nort"}
 
 #: ``mtmb`` is installed as a copy, so its own ``DEFAULT_PATH`` points inside
 #: site-packages: read the tasks from the sibling checkout, export to this project.
-#: Two parents up from ``training/`` (this project's root) reaches ``pyProjects/``.
+#: Two parents up from ``paper/`` (this project's root) reaches ``pyProjects/``.
 MTMB_DATASET_DIR = ROOT.parent.parent / "mtmb" / "dataset"
 DATASETS_DIR = ROOT / "datasets"
 

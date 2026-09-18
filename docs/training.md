@@ -104,6 +104,6 @@ Anything RF-DETR's `train` accepts beyond these — `keypoint_oks_sigmas`,
 
 The runs behind the released weights — every size of every kind, plus the DeepLabCut
 SuperAnimal baseline they are compared with — live in
-[`training/`](https://github.com/juan-cobos/mouselite/tree/main/paper), a separate
+[`paper/`](https://github.com/juan-cobos/mouselite/tree/main/paper), a separate
 uv project with its own README. That is for reproducing the paper; `mouselite train`
 is for adapting the models to your data.
