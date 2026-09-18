@@ -13,7 +13,7 @@ wheels/
 
 output/
 runs/
-scripts/
+/scripts/
 
 .gradio/
 
