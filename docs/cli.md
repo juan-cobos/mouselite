@@ -6,7 +6,7 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 
 | Command | Purpose |
 | ------- | ------- |
-| [`run`](#mouselite-run) | inference + tracking on a video → annotated video + COCO export |
+| [`run`](#mouselite-run) | inference + tracking on one or more videos → annotated video + COCO export each |
 | [`retrack`](#mouselite-retrack) | re-run tracking on an existing export, no inference |
 | [`train`](#mouselite-train) | fine-tune a model on your own frames, optionally converting them first |
 | [`app`](#mouselite-app) | launch the Gradio demo |
@@ -24,22 +24,22 @@ The heavy imports (torch, rfdetr) are deferred until a command needs them, so
 ## `mouselite run`
 
 ```
-mouselite run VIDEO_PATH --kind KIND [OPTIONS]
+mouselite run VIDEO_PATH... --kind KIND [OPTIONS]
 ```
 
-Runs the model on `VIDEO_PATH`, links predictions across frames with a tracker,
-and writes:
+Runs the model on each `VIDEO_PATH`, links predictions across frames with a tracker,
+and writes, per video:
 
 ```
 <output-dir>/
-├── <stem>_annotated.mp4
-└── <stem>_coco/
+└── <stem>_results/
+    ├── <stem>_annotated.mp4
     ├── annotations.json
     └── images/
 ```
 
 where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
-the video on success. The export format is described in [COCO export](coco-export.md).
+each video on success. The export format is described in [COCO export](coco-export.md).
 
 ### Model
 
@@ -77,7 +77,6 @@ Applied in this order, on every inference frame:
 | ------ | ------- | ------- |
 | `--every N` | `1` | Run inference on 1 of every `N` frames; the frames in between are annotated with the last predictions. Only inference frames are exported. |
 | `--output-dir` | `output` | Directory for the video and the export. Created if missing. |
-| `--save-path PATH` | — | Write `annotations.json` here instead of `<output-dir>/<stem>_coco/annotations.json`. The `images/` folder goes next to it. |
 | `--show` / `--no-show` | off | Open a window and preview each annotated frame as it is produced. Needs a display. |
 | `--hud` / `--no-hud` | off | Burn a live `FPS: …` counter (of the pipeline, not the video) into the top-left of the output. |
 | `--show-progress` / `--no-show-progress` | on | Progress bar on stderr. |
@@ -96,6 +95,9 @@ mouselite run cage.mp4 --kind detection --size small --checkpoint runs/best.pt
 
 # Single animal: no tracker involved
 mouselite run cage.mp4 --kind detection --top-k 1
+
+# Every video in a folder, plus one more, with the model loaded once
+mouselite run recordings/ extra.mp4 --kind keypoints --top-k 2
 ```
 
 ## `mouselite retrack`
@@ -108,7 +110,7 @@ Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`
 with its `images/` folder beside it) through a fresh tracker. No model is loaded.
 
 Writes `<output-dir>/<stem>_retracked.mp4` (at 30 fps), where `<stem>` is the export
-folder's name minus `_coco`, and rewrites `track_id` on every annotation **in place**.
+folder's name minus `_results`, and rewrites `track_id` on every annotation **in place**.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
@@ -123,8 +125,8 @@ so omitting them keeps the tracker's own defaults. See [Trackers](trackers.md) f
 what they do and for the confidence caveat that applies to retracking.
 
 ```bash
-mouselite retrack output/cage_coco/annotations.json --tracker ocsort
-mouselite retrack output/cage_coco/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/cage_results/annotations.json --tracker ocsort
+mouselite retrack output/cage_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 ## `mouselite train`
@@ -240,3 +242,4 @@ These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
   `--minimum-iou-threshold` with `botsort`) raises `TypeError` from its constructor.
 - `--show` without a display fails inside OpenCV (`cv2.imshow`); drop the flag on
   headless machines.
+- `run` on a directory without video files exits with status 2 and a usage error.

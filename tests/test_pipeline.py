@@ -75,7 +75,7 @@ def test_run_keypoints(tmp_path: Path) -> None:
     )
     assert annotated_video.exists()
 
-    annotations_path = tmp_path / "output" / "smoke_coco" / "annotations.json"
+    annotations_path = tmp_path / "output" / "smoke_results" / "annotations.json"
     coco = json.loads(annotations_path.read_text())
     assert coco["images"]
     assert "frame_index" in coco["images"][0]
@@ -94,7 +94,7 @@ def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:
 
     assert tracker.updates == 0
 
-    annotations_path = tmp_path / "output" / "smoke_coco" / "annotations.json"
+    annotations_path = tmp_path / "output" / "smoke_results" / "annotations.json"
     coco = json.loads(annotations_path.read_text())
     assert len(coco["images"]) == 6
     # one annotation per detected frame, none for the empty ones

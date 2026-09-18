@@ -59,7 +59,7 @@ def retrack(
     tracker = get_tracker(tracker, **tracker_kwargs)
     annotator = MetaAnnotator()
 
-    stem = annotations_path.parent.name.removesuffix("_coco")
+    stem = annotations_path.parent.name.removesuffix("_results")
     target = Path(output_dir) / f"{stem}_retracked.mp4"
     target.parent.mkdir(parents=True, exist_ok=True)
 

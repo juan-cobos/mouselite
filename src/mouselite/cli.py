@@ -5,10 +5,29 @@ import typer
 
 app = typer.Typer(no_args_is_help=True)
 
+VIDEO_SUFFIXES = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+
+
+def _video_files(paths: list[Path]) -> list[Path]:
+    """Expand directories to the video files inside them (not recursive), in order."""
+    videos = []
+    for path in paths:
+        if path.is_dir():
+            found = sorted(p for p in path.iterdir() if p.suffix.lower() in VIDEO_SUFFIXES)
+            if not found:
+                raise typer.BadParameter(f"No video files in {path}")
+            videos.extend(found)
+        else:
+            videos.append(path)
+    return videos
+
 
 @app.command()
 def run(
-    video_path: Path,
+    video_paths: Annotated[
+        list[Path],
+        typer.Argument(help="Video files, or directories of videos, to process in turn."),
+    ],
     kind: Annotated[str, typer.Option(help="One of the kinds from list-models.")],
     size: str = "medium",
     checkpoint: Path | None = None,
@@ -18,7 +37,6 @@ def run(
     top_k: int | None = None,
     every: int = 1,
     output_dir: Path = Path("output"),
-    save_path: Path | None = None,
     show: bool = False,
     hud: bool = False,
     dtype: str = "float32",
@@ -26,10 +44,12 @@ def run(
     compile: bool = False,
     show_progress: bool = True,
 ) -> None:
-    """Run inference on `video_path`, writing an annotated video and a COCO export."""
+    """Run inference on each video, writing an annotated video and a COCO export."""
     from mouselite.models import get_model
     from mouselite.pipeline import Pipeline
     from mouselite.tracker import get_tracker
+
+    videos = _video_files(video_paths)
 
     model = get_model(
         kind,
@@ -48,15 +68,15 @@ def run(
         top_k=top_k,
         every=every,
     )
-    output = pipeline.run(
-        video_path,
-        output_dir=output_dir,
-        show=show,
-        show_progress=show_progress,
-        hud=hud,
-        save_path=save_path,
-    )
-    typer.echo(f"wrote {output}")
+    for video_path in videos:
+        output = pipeline.run(
+            video_path,
+            output_dir=output_dir,
+            show=show,
+            show_progress=show_progress,
+            hud=hud,
+        )
+        typer.echo(f"wrote {output}")
 
 
 @app.command()

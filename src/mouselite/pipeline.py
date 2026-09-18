@@ -142,20 +142,14 @@ class Pipeline:
         show: bool = False,
         show_progress: bool = True,
         hud: bool = False,
-        save_path: str | Path | None = None,
     ) -> Path:
         """Run inference on `video_path`, writing an annotated video and a COCO export."""
         self.tracker.reset()
         video_path = Path(video_path)
-        target = Path(output_dir) / f"{video_path.stem}_annotated.mp4"
-        target.parent.mkdir(parents=True, exist_ok=True)
-
-        annotations_path = (
-            Path(save_path)
-            if save_path
-            else target.parent / f"{video_path.stem}_coco" / "annotations.json"
-        )
-        images_dir = annotations_path.parent / "images"
+        results_dir = Path(output_dir) / f"{video_path.stem}_results"
+        target = results_dir / f"{video_path.stem}_annotated.mp4"
+        annotations_path = results_dir / "annotations.json"
+        images_dir = results_dir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
 
         detections = sv.Detections.empty()

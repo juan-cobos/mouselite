@@ -4,7 +4,8 @@
 
 ```
 output/
-└── <video-stem>_coco/
+└── <video-stem>_results/
+    ├── <video-stem>_annotated.mp4
     ├── annotations.json
     └── images/
         ├── <video-stem>_000000.jpg
@@ -94,7 +95,7 @@ what this means for `retrack`.
 import json
 import pandas as pd
 
-with open("output/cage_coco/annotations.json") as f:
+with open("output/cage_results/annotations.json") as f:
     coco = json.load(f)
 
 images = pd.DataFrame(coco["images"]).set_index("id")
@@ -127,8 +128,8 @@ video's frame rate. The export does not record it; read it from the video
 import supervision as sv
 
 dataset = sv.DetectionDataset.from_coco(
-    images_directory_path="output/cage_coco/images",
-    annotations_path="output/cage_coco/annotations.json",
+    images_directory_path="output/cage_results/images",
+    annotations_path="output/cage_results/annotations.json",
 )
 for image_path, image, detections in dataset:
     ...  # detections.xyxy, detections.mask (segmentation), detections.class_id

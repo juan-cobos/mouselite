@@ -92,11 +92,11 @@ every annotation in `annotations_path`.
 A `Pipeline` is reusable: `run` calls `tracker.reset()` first. It is not thread-safe
 (the tracker and annotator carry state).
 
-### `Pipeline.run(video_path, output_dir="output", show=False, show_progress=True, hud=False, save_path=None) -> Path`
+### `Pipeline.run(video_path, output_dir="output", show=False, show_progress=True, hud=False) -> Path`
 
-Processes the whole video and returns the annotated video's path. Writes the COCO
-export to `save_path` or `<output_dir>/<stem>_coco/annotations.json`, with frames in
-an `images/` folder beside it. `show` opens an OpenCV window; `hud` burns in an FPS
+Processes the whole video and returns the annotated video's path,
+`<output_dir>/<stem>_results/<stem>_annotated.mp4`. The COCO export goes beside it as
+`annotations.json`, with frames in an `images/` folder. `show` opens an OpenCV window; `hud` burns in an FPS
 counter.
 
 ```python
@@ -109,7 +109,7 @@ tracker = get_tracker("ocsort", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
 video = pipeline.run("cage.mp4", output_dir="output")
-export = video.parent / "cage_coco" / "annotations.json"
+export = video.parent / "annotations.json"
 ```
 
 To process several videos with one loaded model, reuse the `Pipeline`: `run` resets

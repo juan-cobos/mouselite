@@ -63,8 +63,8 @@ def run_inference(
     progress(0, desc="Running inference...")
     video_out_path = pipeline.run(video_path, output_dir=out_dir)
 
-    # Pipeline writes the COCO export next to the annotated video, keyed by video stem.
-    ann_out = out_dir / f"{Path(video_path).stem}_coco" / "annotations.json"
+    # Pipeline writes the COCO export next to the annotated video.
+    ann_out = video_out_path.parent / "annotations.json"
     state = {"annotations": str(ann_out)}
     return str(video_out_path), gr.update(value=str(ann_out), visible=True), state
 

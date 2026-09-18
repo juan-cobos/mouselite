@@ -45,8 +45,8 @@ straight to inference. When it finishes you have:
 
 ```
 output/
-├── video_annotated.mp4          # boxes, track ids and skeletons drawn on every frame
-└── video_coco/
+└── video_results/
+    ├── video_annotated.mp4      # boxes, track ids and skeletons drawn on every frame
     ├── annotations.json         # one entry per animal per frame, with track_id and keypoints
     └── images/                  # the frames inference ran on
 ```
@@ -55,7 +55,7 @@ Open the video to check the result. If the two animals swap ids when they cross,
 try another tracker on the same predictions, no inference this time:
 
 ```bash
-uvx mouselite retrack output/video_coco/annotations.json --tracker bytetrack
+uvx mouselite retrack output/video_results/annotations.json --tracker bytetrack
 ```
 
 That writes `output/video_retracked.mp4` and updates `track_id` in `annotations.json`.

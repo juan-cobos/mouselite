@@ -44,8 +44,8 @@ Writes two things under `--output-dir` (default `output/`):
 
 ```
 output/
-├── video_annotated.mp4          # annotated video
-└── video_coco/
+└── video_results/
+    ├── video_annotated.mp4      # annotated video
     ├── annotations.json         # COCO export (boxes, masks, keypoints, track ids)
     └── images/                  # the frames inference ran on
 ```
@@ -63,7 +63,6 @@ Common options:
 | `--top-k`          | —           | keep only the N highest-scoring predictions per frame        |
 | `--every`          | `1`         | run inference on 1 of every N frames, reusing predictions in between |
 | `--output-dir`     | `output`    | where the video and COCO export are written                  |
-| `--save-path`      | —           | write `annotations.json` somewhere else                      |
 | `--show`           | off         | preview the annotated frames in a window while running       |
 | `--hud`            | off         | draw a live FPS counter on the output                        |
 | `--dtype`          | `float32`   | inference precision                                          |
@@ -77,13 +76,19 @@ Two animals, pose, half the frames, with a preview window:
 mouselite run video.mp4 --kind keypoints --top-k 2 --every 2 --tracker ocsort --show
 ```
 
+Several videos, or a whole folder of them, in one go (the model is loaded once):
+
+```bash
+mouselite run recordings/ extra.mp4 --kind keypoints --top-k 2
+```
+
 ### `retrack` — re-run tracking without re-running inference
 
 Tracking is usually what you end up tuning, and it is far cheaper than inference.
 `retrack` replays an existing COCO export through a different tracker:
 
 ```bash
-mouselite retrack output/video_coco/annotations.json --tracker ocsort
+mouselite retrack output/video_results/annotations.json --tracker ocsort
 ```
 
 Writes `output/video_retracked.mp4` and updates each annotation's `track_id` in
@@ -101,7 +106,7 @@ and how loosely a detection may match it:
 Both are forwarded as-is to the tracker class.
 
 ```bash
-mouselite retrack output/video_coco/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/video_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 ### `app` — Gradio demo
@@ -219,7 +224,6 @@ pipeline = Pipeline(
 annotated_path = pipeline.run(
     "video.mp4",
     output_dir="output",
-    save_path=None,       # override the annotations.json location
     show=False,           # live preview window
     hud=False,            # FPS overlay
     show_progress=True,
@@ -237,7 +241,7 @@ export as COCO `keypoints`/`num_keypoints` fields.
 from mouselite.tracker import retrack
 
 retracked_path = retrack(
-    "output/video_coco/annotations.json",
+    "output/video_results/annotations.json",
     "ocsort",
     output_dir="output",
     lost_track_buffer=90,   # any further kwargs go to the tracker class
