@@ -8,16 +8,18 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 | ------- | ------- |
 | [`run`](#mouselite-run) | inference + tracking on a video → annotated video + COCO export |
 | [`retrack`](#mouselite-retrack) | re-run tracking on an existing export, no inference |
+| [`train`](#mouselite-train) | fine-tune a model on your own frames, optionally converting them first |
 | [`app`](#mouselite-app) | launch the Gradio demo |
 | [`list-models`](#list-commands) | print valid `--kind` / `--size` values |
 | [`list-trackers`](#list-commands) | print valid `--tracker` values |
+| [`list-formats`](#list-commands) | print valid `train --from` values |
 
 Every command accepts `--help`. Boolean options follow typer's convention: `--show`
 turns a flag on, `--no-show` turns it off; the `[default: …]` in `--help` shows which
 applies. `mouselite --install-completion` sets up shell completion.
 
 The heavy imports (torch, rfdetr) are deferred until a command needs them, so
-`--help`, `list-models` and `list-trackers` start instantly.
+`--help` and the `list-*` commands start instantly.
 
 ## `mouselite run`
 
@@ -125,6 +127,62 @@ mouselite retrack output/cage_coco/annotations.json --tracker ocsort
 mouselite retrack output/cage_coco/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
+## `mouselite train`
+
+```
+mouselite train DATASET_DIR --kind KIND [--from FORMAT] [OPTIONS]
+```
+
+Fine-tunes a model when the released weights don't perform as expected on your
+recordings. `DATASET_DIR` is a COCO dataset with `train/` and `valid/` folders (each
+with its images and `_annotations.coco.json`), or — with `--from` — a project in one
+of the formats `list-formats` prints, which is converted into
+`<output-dir>/dataset/` first. Requires the `train` extra (which includes the
+converters); without it the command exits with status 1 and an install hint. See
+[Fine-tuning](training.md) for the workflow and what the conversion does.
+
+### Model
+
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--kind` | *required* | `detection`, `segmentation` or `keypoints`. |
+| `--size` | `medium` | `nano`, `small`, `medium` or `large`. Ignored for `keypoints`. |
+| `--weights` | `base` | Starting weights: `base` (RF-DETR's pretrained), `mouselite` (the released weights) or a checkpoint path. |
+
+### Dataset
+
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--from FORMAT` | — | Convert `DATASET_DIR` from `FORMAT` before training. Currently `deeplabcut`: the project folder or its `config.yaml`. Refused with `--kind segmentation`, since pose projects carry no masks. |
+| `--symlink` / `--no-symlink` | symlink | With `--from`: symlink the images into the converted dataset, or copy them. |
+
+### Training
+
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--output-dir` | `output/train` | Checkpoints, `metrics.csv`/`metrics.png` and, with `--from`, the `dataset/` folder. |
+| `--epochs` | `10` | Epochs. For `keypoints`, train for more than 10 so `checkpoint_best_ema.pth` is meaningful (see [Fine-tuning](training.md#what-you-get)). |
+| `--batch-size` | `4` | Lower it on small GPUs. |
+| `--lr` | RF-DETR's | Learning rate. |
+| `--resolution` | RF-DETR's | Input resolution. |
+| `--device` | auto | Torch device. |
+
+Prints `converted <format> dataset to <path>` when `--from` is used, then
+`wrote checkpoints and metrics.png to <output-dir>` on success.
+
+### Examples
+
+```bash
+# A DeepLabCut project, straight from its folder
+mouselite train dlc-project/ --kind keypoints --from deeplabcut --epochs 30
+
+# The same, copying the images so the dataset is self-contained
+mouselite train dlc-project/ --kind keypoints --from deeplabcut --no-symlink
+
+# A COCO dataset, continuing from the released weights
+mouselite train dataset/ --kind detection --size small --weights mouselite --epochs 20
+```
+
 ## `mouselite app`
 
 ```
@@ -145,7 +203,7 @@ into a temp directory, offers the `annotations.json` for download, and can `retr
 the same predictions with another tracker. Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.
 
-## `mouselite list-models` and `list-trackers` { #list-commands }
+## `mouselite list-models`, `list-trackers` and `list-formats` { #list-commands }
 
 ```
 $ mouselite list-models
@@ -160,16 +218,24 @@ bytetrack
 sort
 cbiou
 mcbyte
+
+$ mouselite list-formats
+deeplabcut
 ```
 
-These read `mouselite.models.MODELS` and `mouselite.tracker.TRACKERS`, so anything
-you register there from Python shows up too.
+These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
+`mouselite.format.FORMATS`, so anything you register there from Python shows up too.
+`list-formats` needs the `convert` extra, which `train` includes.
 
 ## Exit status and errors
 
 - `0` on success; the last line of stdout is `wrote <path>`.
 - Unknown `--tracker` raises `ValueError: Unknown tracker '…'. Available: […]`.
 - Unknown `--kind` or `--size` raises `KeyError` from the model registry.
+- Unknown `--from` raises `ValueError: Unknown format '…'. Available: […]`;
+  `--from` with `--kind segmentation` exits with status 1 and a message.
+- `train`, `app` and `list-formats` exit with status 1 and a `pip install` hint when
+  their extra is missing.
 - A tracker argument the chosen tracker does not accept (for example
   `--minimum-iou-threshold` with `botsort`) raises `TypeError` from its constructor.
 - `--show` without a display fails inside OpenCV (`cv2.imshow`); drop the flag on

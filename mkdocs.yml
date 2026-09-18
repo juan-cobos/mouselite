@@ -53,6 +53,7 @@ nav:
   - How it works: how-it-works.md
   - COCO export: coco-export.md
   - Trackers: trackers.md
+  - Fine-tuning: training.md
   - CLI reference: cli.md
   - Python API: python-api.md
   - Development: development.md

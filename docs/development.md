@@ -12,7 +12,8 @@ uv run pre-commit install    # ruff check --fix and ruff format on every commit
 ```
 
 `uv sync` installs the `dev` dependency group by default. Drop `--extra app` if you
-don't need the demo.
+don't need the demo; add `--extra train` to fine-tune and to run the
+format-conversion tests (`tests/test_format.py` is skipped without pandas).
 
 ## Layout
 
@@ -21,7 +22,7 @@ mouselite/
 ├── src/mouselite/        the package (see docs/how-it-works.md for the module map)
 ├── tests/                pytest suite; no model weights or GPU needed
 ├── docs/                 these pages
-├── training/             paper code: fine-tuning + evaluation, its own uv project
+├── training/                paper code: fine-tuning + evaluation, its own uv project
 ├── assets/               logo
 ├── pyproject.toml        package metadata, ruff config
 └── uv.lock
@@ -30,7 +31,7 @@ mouselite/
 `training/` is a separate uv project with its own lockfile (and a nested one under
 `training/dlc/` for DeepLabCut). It is not part of the `mouselite` wheel and depends
 on the `mtmb` dataset package from a sibling checkout; see its
-[README](https://github.com/juan-cobos/mouselite/tree/main/training).
+[README](https://github.com/juan-cobos/mouselite/tree/main/paper).
 
 ## Tests
 

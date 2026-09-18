@@ -20,8 +20,9 @@ Three model kinds are available:
 ## Installation
 
 ```bash
-pip install mouselite          # or: uv add mouselite
-pip install "mouselite[app]"   # with the Gradio demo
+pip install mouselite                    # or: uv add mouselite
+pip install "mouselite[app]"             # with the Gradio demo
+pip install "mouselite[train]"           # to fine-tune on your own data
 ```
 
 Requires Python ≥ 3.11. Model weights are downloaded from the Hugging Face Hub on
@@ -113,7 +114,33 @@ mouselite app --no-share --port 7860
 Upload a video, pick a model and tracker, run, and retrack the same predictions with
 a different tracker without paying for inference again.
 
-### `list-models` / `list-trackers`
+### `train` — fine-tune when the released models fall short
+
+If the released weights don't perform well on your recordings, fine-tune them on a
+few hundred labeled frames of your own footage:
+
+```bash
+mouselite train dataset/ --kind keypoints --epochs 30
+```
+
+`dataset/` is a COCO dataset with `train/` and `valid/` folders. If you're coming
+from DeepLabCut, point `train` at the project instead and add `--from deeplabcut`;
+the labeled frames are converted before training starts:
+
+```bash
+mouselite train dlc-project/ --kind keypoints --from deeplabcut --epochs 30
+```
+
+Then run your videos with the new weights:
+
+```bash
+mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_best_ema.pth
+```
+
+See [the docs](https://juan-cobos.github.io/mouselite/training/) for the options and
+what the conversion does.
+
+### `list-models` / `list-trackers` / `list-formats`
 
 ```bash
 $ mouselite list-models
@@ -128,6 +155,9 @@ bytetrack
 sort
 cbiou
 mcbyte
+
+$ mouselite list-formats
+deeplabcut
 ```
 
 ## Python API
@@ -216,10 +246,11 @@ retracked_path = retrack(
 
 ## Training
 
-The code behind the released models — fine-tuning RF-DETR and the DeepLabCut
-SuperAnimal baseline, plus the scripts that scored them — lives in
-[`training/`](training/README.md). It is for reproducing the paper; to just run the
-models, use the package above.
+To adapt the models to your own recordings, use `mouselite train` above — from a COCO
+dataset or straight from a DeepLabCut project. The code behind the *released* models
+— fine-tuning RF-DETR and the DeepLabCut SuperAnimal baseline, plus the scripts that
+scored them — lives in [`training/`](training/README.md). It is for reproducing the
+paper; to just run the models, use the package above.
 
 ## Acknowledgements
 
