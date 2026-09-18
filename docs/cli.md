@@ -155,7 +155,7 @@ converters); without it the command exits with status 1 and an install hint. See
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--from FORMAT` | — | Convert `DATASET_DIR` from `FORMAT` before training. Currently `deeplabcut`: the project folder or its `config.yaml`. Refused with `--kind segmentation`, since pose projects carry no masks. |
+| `--from FORMAT` | — | Convert `DATASET_DIR` from `FORMAT` before training: `deeplabcut` (the project folder or its `config.yaml`) or `lightning-pose` (the project folder or a `CollectedData*.csv`). Refused with `--kind segmentation`, since pose projects carry no masks. |
 | `--symlink` / `--no-symlink` | symlink | With `--from`: symlink the images into the converted dataset, or copy them. |
 
 ### Training
@@ -223,6 +223,7 @@ mcbyte
 
 $ mouselite list-formats
 deeplabcut
+lightning-pose
 ```
 
 These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and

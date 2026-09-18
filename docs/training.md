@@ -40,19 +40,23 @@ mouselite train dataset/ --kind keypoints --epochs 30
 `base` (RF-DETR's own pretrained weights, the default), `mouselite` (the released
 weights, usually the better starting point for mice) or a checkpoint path.
 
-## If coming from DeepLabCut
+## If coming from DeepLabCut or Lightning Pose
 
-Labels made in [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) don't need to be
-exported by hand. Point `train` at the project folder and add `--from deeplabcut`:
+Labels made in [DeepLabCut](https://github.com/DeepLabCut/DeepLabCut) or
+[Lightning Pose](https://github.com/paninski-lab/lightning-pose) don't need to be
+exported by hand. Point `train` at the project folder and add `--from`:
 
 ```bash
 mouselite train dlc-project/ --kind keypoints --from deeplabcut --epochs 30
+mouselite train lp-project/ --kind keypoints --from lightning-pose --epochs 30
 ```
 
 The labeled frames are split 80/20 and written as a COCO dataset under
 `<output-dir>/dataset/` before training starts, with the project's bodyparts as
 keypoints. Images are symlinked rather than copied; pass `--no-symlink` to copy them.
-Single- and multi-animal projects both work. `--from` is refused for
+Single- and multi-animal DeepLabCut projects both work, as do single- and multiview
+Lightning Pose projects (each view's frames are more training images; a `visible`
+column is honoured). `--from` is refused for
 `--kind segmentation`, since pose projects have no masks; `mouselite list-formats`
 prints the accepted formats.
 

@@ -129,11 +129,12 @@ mouselite train dataset/ --kind keypoints --epochs 30
 ```
 
 `dataset/` is a COCO dataset with `train/` and `valid/` folders. If you're coming
-from DeepLabCut, point `train` at the project instead and add `--from deeplabcut`;
-the labeled frames are converted before training starts:
+from DeepLabCut or Lightning Pose, point `train` at the project instead and add
+`--from`; the labeled frames are converted before training starts:
 
 ```bash
 mouselite train dlc-project/ --kind keypoints --from deeplabcut --epochs 30
+mouselite train lp-project/ --kind keypoints --from lightning-pose --epochs 30
 ```
 
 Then run your videos with the new weights:
@@ -163,6 +164,7 @@ mcbyte
 
 $ mouselite list-formats
 deeplabcut
+lightning-pose
 ```
 
 ## Python API

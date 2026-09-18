@@ -192,7 +192,7 @@ step, below, that the CLI runs first when given `--from`.
 prints. Each loader takes a project path and returns `(image_paths, xy, category)`:
 the labeled frames, an array of shape `(frames, individuals, keypoints, 2)` with NaN
 for unlabeled keypoints, and the COCO category dict (`keypoints`, `skeleton`).
-Currently `{"deeplabcut": from_deeplabcut}`; add a loader here and it becomes a
+Currently `deeplabcut` and `lightning-pose`; add a loader here and it becomes a
 `--from` value.
 
 ### `convert(dataset_dir, output_dir, from_format, train_fraction=0.8, seed=0, class_name="mouse", symlink=True) -> Path`
@@ -200,7 +200,7 @@ Currently `{"deeplabcut": from_deeplabcut}`; add a loader here and it becomes a
 Turns a project in `from_format` into the `train/` + `valid/` COCO layout RF-DETR
 trains on, at `output_dir`, and returns it. Frames are shuffled with `seed` and split
 by `train_fraction`; images are symlinked into the split folders, or copied with
-`symlink=False`. See [Fine-tuning](training.md#if-coming-from-deeplabcut) for what the
+`symlink=False`. See [Fine-tuning](training.md#if-coming-from-deeplabcut-or-lightning-pose) for what the
 DeepLabCut conversion does with animals, bodyparts and skeletons.
 
 ```python

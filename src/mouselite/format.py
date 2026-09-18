@@ -77,8 +77,42 @@ def from_deeplabcut(path: str | Path, class_name: str = "mouse") -> Loaded:
     return image_paths, xy, category
 
 
+def from_lightning_pose(path: str | Path, class_name: str = "mouse") -> Loaded:
+    """Load the labeled frames of a Lightning Pose project (its folder or a label CSV)."""
+    path = Path(path)
+    files = sorted(path.glob("CollectedData*.csv")) if path.is_dir() else [path]
+    if not files:
+        raise FileNotFoundError(f"No CollectedData*.csv found in {path}")
+    project_dir = path if path.is_dir() else path.parent
+    df = pd.concat([pd.read_csv(f, header=[0, 1, 2], index_col=0) for f in files])
+
+    scorer = df.columns.get_level_values("scorer")[0]
+    bodyparts = list(dict.fromkeys(df.columns.get_level_values("bodyparts")))
+    coords = df.columns.get_level_values("coords")
+    if "visible" in coords:
+        for bodypart in bodyparts:
+            hidden = df[(scorer, bodypart, "visible")].fillna(0) < 2
+            df.loc[hidden, [(scorer, bodypart, "x"), (scorer, bodypart, "y")]] = np.nan
+    df = df.reindex(
+        columns=pd.MultiIndex.from_product(
+            [[scorer], bodyparts, ["x", "y"]], names=["scorer", "bodyparts", "coords"]
+        )
+    )
+    xy = df.to_numpy(dtype=np.float32).reshape(len(df), 1, len(bodyparts), 2)
+    image_paths = [project_dir / str(index).replace("\\", "/") for index in df.index]
+    category = {
+        "id": 1,
+        "name": class_name,
+        "supercategory": "animal",
+        "keypoints": bodyparts,
+        "skeleton": [],  # Lightning Pose projects define no skeleton
+    }
+    return image_paths, xy, category
+
+
 FORMATS = {
     "deeplabcut": from_deeplabcut,
+    "lightning-pose": from_lightning_pose,
 }
 
 
