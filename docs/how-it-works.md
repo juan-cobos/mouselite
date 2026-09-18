@@ -5,10 +5,16 @@ MouseLite is three modules and a CLI on top of them:
 ```
 src/mouselite/
 ├── models.py     get_model(): pick an RF-DETR class, fetch weights, put it in inference mode
-├── tracker.py    get_tracker(), retrack(): the tracker registry and the re-tracking replay
-├── pipeline.py   Pipeline, MetaAnnotator, the COCO conversion helpers
-├── cli.py        typer commands: run, retrack, app, list-models, list-trackers
-└── app.py        the optional Gradio demo (needs the [app] extra)
+├── cli.py        typer commands: run, retrack, analyze, train, app, list-*
+├── app.py        the optional Gradio demo (needs the [app] extra)
+├── format.py     convert(): DeepLabCut / Lightning Pose projects → COCO (needs [convert])
+├── train.py      train(): fine-tuning (needs [train])
+└── analysis/     downstream statistics from an export
+    ├── tracks.py       Tracks: the (frame, track) grid, from_coco(), summary tables
+    ├── cleaning.py     interpolate(), smooth()
+    ├── kinematics.py   speed(), distance_traveled(), heading(), …
+    ├── masks.py        mask_centroids(), mask_axes()
+    └── space.py        in_polygon(), bouts(), occupancy()
 ```
 
 `pipeline.py` is the core. Everything else either builds its inputs (a model, a

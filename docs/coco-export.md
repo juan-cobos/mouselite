@@ -12,18 +12,14 @@ output/
         ├── <video-stem>_000001.jpg
         └── …
 ```
-
-`annotations.json` is a standard [COCO](https://cocodataset.org/#format-data)
-detection/keypoint file with two MouseLite additions: `images[].frame_index` and
-`annotations[].track_id`. Anything that reads COCO
-(supervision, pycocotools, FiftyOne, CVAT, …) can load it and will ignore the
+detection/keypoint file with three MouseLite additions: `images[].frame_index`,
+`annotations[].track_id` and the source video's `fps` in `info`. Anything that reads
+COCO (supervision, pycocotools, FiftyOne, CVAT, …) can load it and will ignore the
 extras.
 
 ## Layout
 
-```json
-{
-  "info": {},
+  "info": { "video": "cage.mp4", "fps": 30.0, "total_frames": 54000 },
   "licenses": [],
   "categories": [
     { "id": 1, "name": "mouse", "supercategory": "common-objects" }
@@ -47,7 +43,12 @@ extras.
     }
   ]
 }
-```
+### `info`
+
+COCO leaves this block free-form. **MouseLite extra.** `run` records the source
+`video` file name, its `fps` and `total_frames`, so `frame_index / fps` gives the time
+of a frame without going back to the video. Exports written before this was added
+have an empty `info`; pass the frame rate yourself (`analysis.Tracks.from_coco(..., fps=30)`).
 
 ### `images`
 
@@ -116,11 +117,11 @@ import numpy as np
 
 kp = np.stack(ann["keypoints"].map(np.asarray)).reshape(len(ann), -1, 3)
 xy, visible = kp[..., :2], kp[..., 2] > 0
-```
+Time in seconds is `frame_index / coco["info"]["fps"]`. For an export with an empty
+`info`, read the frame rate from the video (`sv.VideoInfo.from_video_path(path).fps`).
 
-Time in seconds is `frame_index / source_fps`, where `source_fps` is the original
-video's frame rate. The export does not record it; read it from the video
-(`sv.VideoInfo.from_video_path(path).fps`).
+Or skip the pandas boilerplate: `mouselite.analysis.Tracks.from_coco` does all of the
+above and more — see [`mouselite.analysis`](python-api.md#mouseliteanalysis).
 
 ### With supervision
 

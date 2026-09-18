@@ -112,6 +112,67 @@ def retrack(
 
 
 @app.command()
+def analyze(
+    annotations_path: Path,
+    fps: Annotated[
+        float | None,
+        typer.Option(help="Source frame rate, if the export did not record it."),
+    ] = None,
+    scale: Annotated[
+        float,
+        typer.Option(help="Units per pixel (e.g. cm/px) for distances and speeds."),
+    ] = 1.0,
+    immobile_below: Annotated[
+        float | None,
+        typer.Option(help="Speed under which a frame counts as immobile, in output units."),
+    ] = None,
+    min_frames: Annotated[
+        int,
+        typer.Option(help="Drop tracks seen on fewer frames than this."),
+    ] = 1,
+    max_gap: Annotated[
+        int | None,
+        typer.Option(help="Fill missing detections over gaps of up to this many frames."),
+    ] = None,
+    smooth_window: Annotated[
+        int | None,
+        typer.Option(help="Rolling-median window, in frames, applied to the trajectories."),
+    ] = None,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option(help="Defaults to the folder holding the annotations."),
+    ] = None,
+) -> None:
+    """Summarise a COCO export into per-track statistics and trajectory tables.
+
+    Writes `summary.csv` and `trajectories.csv` next to the annotations.
+    """
+    from mouselite import analysis
+
+    tracks = analysis.Tracks.from_coco(annotations_path, fps=fps, min_frames=min_frames)
+    if max_gap is not None:
+        tracks.xyxy = analysis.interpolate(tracks.xyxy, max_gap=max_gap)
+        if tracks.keypoints is not None:
+            tracks.keypoints = analysis.interpolate(tracks.keypoints, max_gap=max_gap)
+    if smooth_window is not None:
+        tracks.xyxy = analysis.smooth(tracks.xyxy, window=smooth_window)
+        if tracks.keypoints is not None:
+            tracks.keypoints = analysis.smooth(tracks.keypoints, window=smooth_window)
+
+    output_dir = output_dir or annotations_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = tracks.summary(scale=scale, immobile_below=immobile_below)
+    table.to_csv(output_dir / "summary.csv", index=False)
+    tracks.to_dataframe().to_csv(output_dir / "trajectories.csv", index=False)
+
+    units = "px" if scale == 1.0 else "units"
+    per = "s" if tracks.fps else "frame"
+    typer.echo(f"{tracks.n_tracks} tracks over {tracks.n_frames} frames ({units}/{per})")
+    typer.echo(table.to_string(index=False, float_format=lambda v: f"{v:.2f}"))
+    typer.echo(f"wrote {output_dir / 'summary.csv'}")
+
+
+@app.command()
 def train(
     dataset_dir: Path,
     kind: Annotated[str, typer.Option(help="One of the kinds from list-models.")],

@@ -79,5 +79,7 @@ then **Retrack** with a different tracker. Download the annotations when ready.
 - Long video? `--every 2` runs inference on every other frame. `--compile` is
   slower to start and faster per frame.
 - Watch it as it runs: `--show`.
+- Numbers out of it — distance, speed, time immobile:
+  `mouselite analyze output/video_results/annotations.json`.
 - Every option: [CLI reference](cli.md). What's in `annotations.json`:
   [COCO export](coco-export.md). Which tracker to pick: [Trackers](trackers.md).

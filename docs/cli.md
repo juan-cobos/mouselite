@@ -127,6 +127,34 @@ what they do and for the confidence caveat that applies to retracking.
 ```bash
 mouselite retrack output/cage_results/annotations.json --tracker ocsort
 mouselite retrack output/cage_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+## `mouselite analyze`
+
+```
+mouselite analyze ANNOTATIONS_PATH [OPTIONS]
+```
+
+Summarises the export at `ANNOTATIONS_PATH` into per-track statistics. No model is
+loaded.
+
+Writes `summary.csv` (one row per track: frames seen, distance, mean and max speed,
+mean area, time immobile) and `trajectories.csv` (one row per frame and track, with
+the box centre, box, area and keypoints) next to the annotations, or in
+`--output-dir`, and prints the summary table. See
+[`mouselite.analysis`](python-api.md#mouseliteanalysis) for the Python API behind it.
+
+| Option | Default | Meaning |
+| ------ | ------- | ------- |
+| `--fps X` | export's `info.fps` | Source frame rate, for exports that did not record one. Without it speeds are per frame. |
+| `--scale X` | `1.0` | Units per pixel (e.g. cm/px); distances and speeds are multiplied by it. |
+| `--immobile-below X` | off | Speed under which a frame counts as immobile, adding `immobile_fraction` to the summary. |
+| `--min-frames N` | `1` | Drop tracks detected on fewer frames than this. |
+| `--max-gap N` | off | Linearly interpolate missing detections over gaps of at most `N` frames. |
+| `--smooth-window N` | off | Rolling-median window, in frames, applied to boxes and keypoints. |
+| `--output-dir` | beside the annotations | Where the three CSVs go. |
+
+```bash
+mouselite analyze output/cage_results/annotations.json
+mouselite analyze output/cage_results/annotations.json --scale 0.05 --immobile-below 2 --max-gap 5 --smooth-window 5
 ```
 
 ## `mouselite train`

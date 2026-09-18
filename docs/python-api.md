@@ -7,8 +7,7 @@ The CLI is a thin wrapper over a few importable pieces. Nothing is re-exported f
 from mouselite.models import MODELS, get_model
 from mouselite.pipeline import MetaAnnotator, Pipeline
 from mouselite.tracker import TRACKERS, get_tracker, retrack
-from mouselite.train import train            # [train] extra
-from mouselite.format import FORMATS, convert  # [convert] extra, included in [train]
+from mouselite import analysis
 ```
 
 `mouselite.tracker` imports `trackers` (and so torch) at module level; `mouselite.models`

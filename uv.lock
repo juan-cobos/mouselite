@@ -2228,6 +2228,7 @@ source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "opencv-python" },
+    { name = "pandas" },
     { name = "rfdetr" },
     { name = "supervision" },
     { name = "tqdm" },
@@ -2240,11 +2241,9 @@ app = [
     { name = "gradio" },
 ]
 convert = [
-    { name = "pandas" },
     { name = "tables" },
 ]
 train = [
-    { name = "pandas" },
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
     { name = "tables" },
 ]
@@ -2262,7 +2261,7 @@ requires-dist = [
     { name = "huggingface-hub", specifier = ">=1.27.0" },
     { name = "mouselite", extras = ["convert"], marker = "extra == 'train'" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
-    { name = "pandas", marker = "extra == 'convert'", specifier = ">=2.0.0" },
+    { name = "pandas", specifier = ">=2.0.0" },
     { name = "rfdetr", specifier = ">=1.9.2" },
     { name = "rfdetr", extras = ["train", "loggers", "visual"], marker = "extra == 'train'" },
     { name = "supervision", specifier = ">=0.30.0" },

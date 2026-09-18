@@ -154,8 +154,13 @@ class Pipeline:
 
         detections = sv.Detections.empty()
         fps_monitor = sv.FPSMonitor() if hud else None
+        video_info = sv.VideoInfo.from_video_path(str(video_path))
         coco = {
-            "info": {},
+            "info": {
+                "video": video_path.name,
+                "fps": video_info.fps,
+                "total_frames": video_info.total_frames,
+            },
             "licenses": [],
             "categories": classes_to_coco_categories(self.model.class_names),
             "images": [],
