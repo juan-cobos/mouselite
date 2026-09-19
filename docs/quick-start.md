@@ -79,7 +79,8 @@ then **Retrack** with a different tracker. Download the annotations when ready.
 - Long video? `--every 2` runs inference on every other frame. `--compile` is
   slower to start and faster per frame.
 - Watch it as it runs: `--show`.
-- Numbers out of it — distance, speed, time immobile:
-  `mouselite analyze output/video_results/annotations.json`.
+- Numbers out of it: `output/video_results/summary.csv` has per-track distance and
+  speed, `trajectories.csv` the per-frame positions. For cm instead of px, gap
+  filling or smoothing, use [`mouselite.analysis`](python-api.md#mouseliteanalysis).
 - Every option: [CLI reference](cli.md). What's in `annotations.json`:
   [COCO export](coco-export.md). Which tracker to pick: [Trackers](trackers.md).

@@ -14,6 +14,8 @@ from supervision.dataset.formats.coco import (
 from supervision.utils.file import save_json_file
 from trackers.core.base import BaseTracker
 
+from mouselite.analysis import Tracks
+
 
 class MLModel(Protocol):
     def predict(
@@ -143,12 +145,15 @@ class Pipeline:
         show_progress: bool = True,
         hud: bool = False,
     ) -> Path:
-        """Run inference on `video_path`, writing an annotated video and a COCO export."""
+        """Run inference on `video_path`, writing an annotated video, a COCO export, and
+        `trajectories.csv` / `summary.csv`."""
         self.tracker.reset()
         video_path = Path(video_path)
         results_dir = Path(output_dir) / f"{video_path.stem}_results"
         target = results_dir / f"{video_path.stem}_annotated.mp4"
         annotations_path = results_dir / "annotations.json"
+        trajectories_path = results_dir / "trajectories.csv"
+        summary_path = results_dir / "summary.csv"
         images_dir = results_dir / "images"
         images_dir.mkdir(parents=True, exist_ok=True)
 
@@ -233,5 +238,8 @@ class Pipeline:
             cv2.destroyAllWindows()
 
         save_json_file(coco, file_path=annotations_path)
+        tracks = Tracks.from_coco(annotations_path)
+        tracks.to_dataframe().to_csv(trajectories_path, index=False)
+        tracks.summary().to_csv(summary_path, index=False)
 
         return target

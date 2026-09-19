@@ -6,7 +6,7 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 
 | Command | Purpose |
 | ------- | ------- |
-| [`run`](#mouselite-run) | inference + tracking on one or more videos → annotated video + COCO export each |
+| [`run`](#mouselite-run) | inference + tracking on one or more videos → annotated video, COCO export, trajectory and summary tables each |
 | [`retrack`](#mouselite-retrack) | re-run tracking on an existing export, no inference |
 | [`train`](#mouselite-train) | fine-tune a model on your own frames, optionally converting them first |
 | [`app`](#mouselite-app) | launch the Gradio demo |
@@ -35,11 +35,18 @@ and writes, per video:
 └── <stem>_results/
     ├── <stem>_annotated.mp4
     ├── annotations.json
+    ├── trajectories.csv
+    ├── summary.csv
     └── images/
 ```
 
 where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
 each video on success. The export format is described in [COCO export](coco-export.md).
+`trajectories.csv` is the same data as a long table with one row per frame and track
+(box centre, box, area and keypoints); `summary.csv` has one row per track (frames
+seen, coverage, distance, mean and max speed, duration, mean area). Both are in
+pixels and, using the video's frame rate, seconds; the tracks are raw. For real-world
+units, gap filling and smoothing, see [`mouselite.analysis`](python-api.md#mouseliteanalysis).
 
 ### Model
 
@@ -110,7 +117,8 @@ Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`
 with its `images/` folder beside it) through a fresh tracker. No model is loaded.
 
 Writes `<output-dir>/<stem>_retracked.mp4` (at 30 fps), where `<stem>` is the export
-folder's name minus `_results`, and rewrites `track_id` on every annotation **in place**.
+folder's name minus `_results`, rewrites `track_id` on every annotation **in place**,
+and regenerates `trajectories.csv` and `summary.csv` beside the annotations.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
@@ -127,36 +135,6 @@ what they do and for the confidence caveat that applies to retracking.
 ```bash
 mouselite retrack output/cage_results/annotations.json --tracker ocsort
 mouselite retrack output/cage_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
-## `mouselite analyze`
-
-```
-mouselite analyze ANNOTATIONS_PATH [OPTIONS]
-```
-
-Summarises the export at `ANNOTATIONS_PATH` into per-track statistics. No model is
-loaded.
-
-Writes `summary.csv` (one row per track: frames seen, distance, mean and max speed,
-mean area, time immobile) and `trajectories.csv` (one row per frame and track, with
-the box centre, box, area and keypoints) next to the annotations, or in
-`--output-dir`, and prints the summary table. See
-[`mouselite.analysis`](python-api.md#mouseliteanalysis) for the Python API behind it.
-
-| Option | Default | Meaning |
-| ------ | ------- | ------- |
-| `--fps X` | export's `info.fps` | Source frame rate, for exports that did not record one. Without it speeds are per frame. |
-| `--scale X` | `1.0` | Units per pixel (e.g. cm/px); distances and speeds are multiplied by it. |
-| `--immobile-below X` | off | Speed under which a frame counts as immobile, adding `immobile_fraction` to the summary. |
-| `--min-frames N` | `1` | Drop tracks detected on fewer frames than this. |
-| `--max-gap N` | off | Linearly interpolate missing detections over gaps of at most `N` frames. |
-| `--smooth-window N` | off | Rolling-median window, in frames, applied to boxes and keypoints. |
-| `--output-dir` | beside the annotations | Where the three CSVs go. |
-
-```bash
-mouselite analyze output/cage_results/annotations.json
-mouselite analyze output/cage_results/annotations.json --scale 0.05 --immobile-below 2 --max-gap 5 --smooth-window 5
-```
-
 ## `mouselite train`
 
 ```

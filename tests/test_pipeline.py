@@ -4,6 +4,7 @@ from typing import ClassVar
 
 import cv2
 import numpy as np
+import pandas as pd
 import supervision as sv
 from trackers.core.base import BaseTracker
 
@@ -81,6 +82,13 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert "frame_index" in coco["images"][0]
     assert "keypoints" in coco["annotations"][0]
     assert coco["annotations"][0]["track_id"] == 0
+
+    trajectories = pd.read_csv(tmp_path / "output" / "smoke_results" / "trajectories.csv")
+    assert len(trajectories) == len(coco["annotations"])
+    assert {"frame_index", "time", "track_id", "x", "y"} <= set(trajectories.columns)
+    summary = pd.read_csv(tmp_path / "output" / "smoke_results" / "summary.csv")
+    assert summary.track_id.tolist() == [0]
+    assert {"frames", "distance", "mean_speed", "duration"} <= set(summary.columns)
 
 
 def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:

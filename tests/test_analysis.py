@@ -4,12 +4,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-from typer.testing import CliRunner
 
 from mouselite import analysis
-from mouselite.cli import app
-
-runner = CliRunner()
 
 
 def make_export(path: Path, every: int = 1, fps: float | None = 10.0) -> None:
@@ -289,19 +285,3 @@ def test_summary_and_tables(tmp_path: Path) -> None:
 
     single = tracks.select([0]).to_deeplabcut()
     assert single.columns.names == ["scorer", "bodyparts", "coords"]
-
-
-def test_analyze_cli(tmp_path: Path) -> None:
-    make_export(tmp_path / "annotations.json")
-    args = ["analyze", str(tmp_path / "annotations.json"), "--max-gap", "1"]
-    args += ["--smooth-window", "3", "--immobile-below", "1"]
-    result = runner.invoke(app, args)
-
-    assert result.exit_code == 0, result.output
-    assert "2 tracks over 6 frames (px/s)" in result.output
-    for name in ("summary.csv", "trajectories.csv"):
-        assert (tmp_path / name).exists()
-    assert not (tmp_path / "deeplabcut.csv").exists()
-    table = pd.read_csv(tmp_path / "summary.csv").set_index("track_id")
-    assert table.loc[1, "frames"] == 6  # the gap was interpolated
-    assert "immobile_fraction" in table

@@ -90,6 +90,7 @@ class Tracks:
         rows = []
         for n, track_id in enumerate(self.track_ids):
             seen = np.flatnonzero(present[:, n])
+            moving = v[~np.isnan(v[:, n]), n]  # empty if never seen on consecutive frames
             row = {
                 "track_id": int(track_id),
                 "frames": len(seen),
@@ -97,8 +98,8 @@ class Tracks:
                 "last_frame": int(self.frame_index[seen[-1]]),
                 "coverage": len(seen) / self.n_frames,
                 "distance": float(distance_traveled(xy[:, n], scale)),
-                "mean_speed": float(np.nanmean(v[:, n])) if len(seen) > 1 else np.nan,
-                "max_speed": float(np.nanmax(v[:, n])) if len(seen) > 1 else np.nan,
+                "mean_speed": float(moving.mean()) if len(moving) else np.nan,
+                "max_speed": float(moving.max()) if len(moving) else np.nan,
                 "mean_area": float(np.nanmean(self.area[:, n])) * scale**2,
             }
             if self.masks is not None:
@@ -107,7 +108,6 @@ class Tracks:
             if self.fps is not None:
                 row["duration"] = (row["last_frame"] - row["first_frame"] + 1) / self.fps
             if immobile_below is not None:
-                moving = v[~np.isnan(v[:, n]), n]
                 row["immobile_fraction"] = (
                     float((moving < immobile_below).mean()) if len(moving) else np.nan
                 )

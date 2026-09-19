@@ -5,7 +5,7 @@ MouseLite is three modules and a CLI on top of them:
 ```
 src/mouselite/
 ├── models.py     get_model(): pick an RF-DETR class, fetch weights, put it in inference mode
-├── cli.py        typer commands: run, retrack, analyze, train, app, list-*
+├── cli.py        typer commands: run, retrack, train, app, list-*
 ├── app.py        the optional Gradio demo (needs the [app] extra)
 ├── format.py     convert(): DeepLabCut / Lightning Pose projects → COCO (needs [convert])
 ├── train.py      train(): fine-tuning (needs [train])

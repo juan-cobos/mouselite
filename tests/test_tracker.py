@@ -105,3 +105,5 @@ def test_retrack_writes_track_ids(tmp_path: Path, monkeypatch) -> None:
 
     coco = json.loads(annotations_path.read_text())
     assert [a["track_id"] for a in coco["annotations"]] == [0, 0]
+    for name in ("trajectories.csv", "summary.csv"):
+        assert (annotations_path.parent / name).exists()
