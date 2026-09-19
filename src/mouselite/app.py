@@ -197,9 +197,10 @@ with gr.Blocks(title="MouseLite") as demo:
 
 
 def main(
-    share: bool = True,
+    share: bool = False,
     host: str | None = None,
     port: int | None = None,
+    inbrowser: bool = True,
 ) -> None:
     """Serve the demo. Called by `mouselite app`."""
     demo.launch(
@@ -208,6 +209,7 @@ def main(
         server_name=host,
         server_port=port,
         footer_links=[],
+        inbrowser=inbrowser,
     )
 
 

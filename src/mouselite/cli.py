@@ -178,9 +178,10 @@ def train(
 
 @app.command("app")
 def app_command(
-    share: bool = True,
+    share: bool = False,
     host: str | None = None,
     port: int | None = None,
+    inbrowser: bool = True,
 ) -> None:
     r"""Launch the Gradio demo. Needs the extra: `pip install mouselite\[app]`."""
     try:
@@ -191,7 +192,7 @@ def app_command(
             err=True,
         )
         raise typer.Exit(1) from exc
-    launch_app(share=share, host=host, port=port)
+    launch_app(share=share, host=host, port=port, inbrowser=inbrowser)
 
 
 @app.command("list-models")
