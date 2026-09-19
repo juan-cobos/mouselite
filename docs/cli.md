@@ -207,8 +207,9 @@ without it the command exits with status 1 and an install hint.
 | `--port` | Gradio's (`7860`) | Port to bind. |
 
 The demo uploads a video, runs `run` with the chosen kind/size/tracker/thresholds
-into a temp directory, offers the `annotations.json` for download, and can `retrack`
-the same predictions with another tracker. Models are cached in memory (two at a
+into a temp directory, offers `annotations.json`, `trajectories.csv` and `summary.csv`
+for download, and can `retrack` the same predictions with another tracker (which
+refreshes the downloads). Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.
 
 ## `mouselite list-models`, `list-trackers` and `list-formats` { #list-commands }

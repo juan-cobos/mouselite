@@ -116,8 +116,9 @@ mouselite app                       # needs the [app] extra
 mouselite app --no-share --port 7860
 ```
 
-Upload a video, pick a model and tracker, run, and retrack the same predictions with
-a different tracker without paying for inference again.
+Upload a video, pick a model and tracker, run, download the annotated video with its
+COCO export and CSV tables, and retrack the same predictions with a different tracker
+without paying for inference again.
 
 ### `train` — fine-tune when the released models fall short
 

@@ -17,6 +17,7 @@ from mouselite.tracker import TRACKERS, get_tracker, retrack
 
 KINDS = list(MODELS)
 SIZES = list(MODELS["detection"])
+EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")
 
 
 @lru_cache(maxsize=2)
@@ -27,6 +28,12 @@ def _load_model(kind: str, size: str):
 
 def _tmp_dir(prefix: str = "mouselite_") -> Path:
     return Path(tempfile.mkdtemp(prefix=prefix))
+
+
+def _exports(results_dir: str | Path):
+    """Value for the downloads component: the COCO export and CSV tables in `results_dir`."""
+    files = [str(Path(results_dir) / name) for name in EXPORTS]
+    return gr.update(value=files, visible=True)
 
 
 def run_inference(
@@ -40,7 +47,7 @@ def run_inference(
     every,
     progress=gr.Progress(track_tqdm=True),  # noqa: B008 — Gradio injects via this default
 ):
-    """Run inference on the input video, returning the annotated video and COCO export."""
+    """Run inference on the input video, returning the annotated video and its exports."""
     if video_path is None:
         gr.Warning("Please upload a video or record from webcam first.")
         return None, gr.update(visible=False), None
@@ -63,10 +70,10 @@ def run_inference(
     progress(0, desc="Running inference...")
     video_out_path = pipeline.run(video_path, output_dir=out_dir)
 
-    # Pipeline writes the COCO export next to the annotated video.
-    ann_out = video_out_path.parent / "annotations.json"
-    state = {"annotations": str(ann_out)}
-    return str(video_out_path), gr.update(value=str(ann_out), visible=True), state
+    # Pipeline writes the COCO export and CSV tables next to the annotated video.
+    results_dir = video_out_path.parent
+    state = {"results_dir": str(results_dir)}
+    return str(video_out_path), _exports(results_dir), state
 
 
 def run_retrack(
@@ -77,15 +84,15 @@ def run_retrack(
     """Re-run tracking on the last run's predictions, without running inference again."""
     if not state:
         gr.Warning("Run inference once before retracking.")
-        return None
+        return None, gr.update()
 
     progress(0, desc=f"Retracking with {tracker_type}...")
     target = retrack(
-        state["annotations"],
+        Path(state["results_dir"]) / "annotations.json",
         tracker_type,
         output_dir=_tmp_dir("mouselite_retrack_"),
     )
-    return str(target)
+    return str(target), _exports(state["results_dir"])
 
 
 def _toggle_size(kind):
@@ -111,7 +118,12 @@ with gr.Blocks(title="MouseLite") as demo:
     with gr.Row():
         run_btn = gr.Button("Run", variant="primary", size="lg")
         retrack_btn = gr.Button("Retrack", size="lg")
-    annotations_out = gr.File(label="Annotations file", interactive=False, visible=False)
+    exports_out = gr.File(
+        label="Results: COCO export, trajectories and summary",
+        file_count="multiple",
+        interactive=False,
+        visible=False,
+    )
 
     with gr.Accordion("Configuration", open=True), gr.Row():
         with gr.Column():
@@ -173,7 +185,7 @@ with gr.Blocks(title="MouseLite") as demo:
 
     run_btn.click(
         lambda: gr.update(visible=False),
-        outputs=annotations_out,
+        outputs=exports_out,
     ).then(
         run_inference,
         inputs=[
@@ -186,13 +198,13 @@ with gr.Blocks(title="MouseLite") as demo:
             top_k,
             every,
         ],
-        outputs=[video_out, annotations_out, last_run],
+        outputs=[video_out, exports_out, last_run],
     )
 
     retrack_btn.click(
         run_retrack,
         inputs=[last_run, tracker_type],
-        outputs=video_out,
+        outputs=[video_out, exports_out],
     )
 
 
