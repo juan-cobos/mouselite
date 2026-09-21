@@ -9,7 +9,7 @@ video pipeline: it predicts per frame, links predictions across frames with a
 multi-object tracker, writes an annotated video, and exports the predictions as a
 COCO dataset you can re-track or analyse later.
 
-Three model kinds are available:
+Three model kinds trained on [MTMB](https://github.com/juan-cobos/mtmb) dataset are available:
 
 | Kind           | Sizes                             | Output                     |
 | -------------- | --------------------------------- | -------------------------- |
@@ -34,86 +34,25 @@ first use and cached.
 mouselite --help
 ```
 
-### `run` — inference on a video
+### CLI examples
 
 ```bash
-mouselite run video.mp4 --kind keypoints
+# Run keypoints predictions on 'video.mp4' with maximum 2 animals and ocsort tracker
+mouselite run video.mp4 --kind keypoints --top-k 2 --tracker ocsort
+
+# Same but on all videos in the directory
+mouselite run /my-folder/ --kind keypoints --top-k 2 --tracker ocsort
+
+# Re-run tracking without re-running inference 
+mouselite retrack output/video_results/annotations.json --tracker bytetrack --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
-Writes two things under `--output-dir` (default `output/`):
-
-```
-output/
-└── video_results/
-    ├── video_annotated.mp4      # annotated video
-    ├── annotations.json         # COCO export (boxes, masks, keypoints, track ids)
-    └── images/                  # the frames inference ran on
-```
-
-Common options:
-
-| Option             | Default     | Meaning                                                     |
-| ------------------ | ----------- | ----------------------------------------------------------- |
-| `--kind`           | *required*  | `detection`, `segmentation` or `keypoints`                   |
-| `--size`           | `medium`    | model size; ignored by `keypoints`                           |
-| `--checkpoint`     | —           | path to your own weights, skipping the Hub download          |
-| `--tracker`        | `ocsort`    | tracking algorithm (see `list-trackers`)                     |
-| `--threshold`      | `0.5`       | minimum confidence for a prediction to be kept               |
-| `--nms-threshold`  | `0.5`       | drop the lower-scoring of two predictions overlapping above this |
-| `--top-k`          | —           | keep only the N highest-scoring predictions per frame        |
-| `--every`          | `1`         | run inference on 1 of every N frames, reusing predictions in between |
-| `--output-dir`     | `output`    | where the video and COCO export are written                  |
-| `--show`           | off         | preview the annotated frames in a window while running       |
-| `--hud`            | off         | draw a live FPS counter on the output                        |
-| `--dtype`          | `float32`   | inference precision                                          |
-| `--batch-size`     | `1`         | inference batch size                                          |
-| `--compile`        | off         | `torch.compile` the model — slower to start, faster per frame |
-| `--no-show-progress` | —         | silence the progress bar                                      |
-
-Two animals, pose, half the frames, with a preview window:
-
-```bash
-mouselite run video.mp4 --kind keypoints --top-k 2 --every 2 --tracker ocsort --show
-```
-
-Several videos, or a whole folder of them, in one go (the model is loaded once):
-
-```bash
-mouselite run recordings/ extra.mp4 --kind keypoints --top-k 2
-```
-
-### `retrack` — re-run tracking without re-running inference
-
-Tracking is usually what you end up tuning, and it is far cheaper than inference.
-`retrack` replays an existing COCO export through a different tracker:
-
-```bash
-mouselite retrack output/video_results/annotations.json --tracker ocsort
-```
-
-Writes `output/video_retracked.mp4` and updates each annotation's `track_id` in
-`annotations.json` in place, so the export always reflects the last tracking pass
-(`-1` for detections the tracker did not confirm).
-
-The two knobs that matter most for mice are how long a track survives an occlusion
-and how loosely a detection may match it:
-
-| Option                    | Default (tracker's) | Meaning                                              |
-| ------------------------- | ------------------- | ---------------------------------------------------- |
-| `--lost-track-buffer`     | `30`                | frames a track is kept alive without a match          |
-| `--minimum-iou-threshold` | `0.1`–`0.3`         | minimum IoU to match a detection to an existing track |
-
-Both are forwarded as-is to the tracker class.
-
-```bash
-mouselite retrack output/video_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
-```
+See [the docs](https://juan-cobos.github.io/mouselite/CLI/) for all the CLI options.
 
 ### `app` — Gradio demo
 
 ```bash
 mouselite app                       # needs the [app] extra
-mouselite app --no-share --port 7860
 ```
 
 Upload a video, pick a model and tracker, run, download the annotated video with its
@@ -147,27 +86,6 @@ mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_be
 See [the docs](https://juan-cobos.github.io/mouselite/training/) for the options and
 what the conversion does.
 
-### `list-models` / `list-trackers` / `list-formats`
-
-```bash
-$ mouselite list-models
-detection: nano, small, medium, large
-segmentation: nano, small, medium, large
-keypoints
-
-$ mouselite list-trackers
-botsort
-ocsort
-bytetrack
-sort
-cbiou
-mcbyte
-
-$ mouselite list-formats
-deeplabcut
-lightning-pose
-```
-
 ## Python API
 
 The CLI is a thin wrapper over three pieces: a model, a tracker, and a `Pipeline`
@@ -183,81 +101,19 @@ tracker = get_tracker("ocsort")
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2)
 annotated_path = pipeline.run("video.mp4", output_dir="output")
-```
-
-### `get_model`
-
-```python
-model = get_model(
-    "segmentation",       # "detection", "segmentation" or "keypoints"
-    size="large",         # ignored for "keypoints"
-    checkpoint=None,      # path to your own weights; otherwise pulled from the Hub
-    dtype="float32",
-    batch_size=1,
-    compile=False,
-)
-```
-
-Returns an RF-DETR model already put in inference mode. Any object with a
-`predict(frame, threshold) -> sv.Detections | sv.KeyPoints` method and a `class_names`
-attribute works in its place — that is the whole `MLModel` protocol the pipeline
-depends on.
-
-### `get_tracker`
-
-```python
-tracker = get_tracker("bytetrack", frame_rate=30)
-```
-
-Any name from `mouselite.tracker.TRACKERS`; keyword arguments go straight to the
-underlying [`trackers`](https://github.com/roboflow/trackers) class.
-
-### `Pipeline`
-
-```python
-pipeline = Pipeline(
-    model,
-    tracker,
-    threshold=0.5,        # confidence floor
-    nms_threshold=0.5,    # NMS IoU threshold
-    top_k=None,           # cap on predictions per frame, by confidence
-    every=1,              # run inference on 1 of every N frames
-)
-
-annotated_path = pipeline.run(
-    "video.mp4",
-    output_dir="output",
-    show=False,           # live preview window
-    hud=False,            # FPS overlay
-    show_progress=True,
-)
-```
-
-`run` returns the path of the annotated video and writes the COCO export beside it.
-Keypoint predictions are converted to `sv.Detections` for tracking — keeping the
-model's own box rather than a box fitted to the keypoints — and carried through to the
-export as COCO `keypoints`/`num_keypoints` fields.
-
-### `retrack`
-
-```python
-from mouselite.tracker import retrack
-
 retracked_path = retrack(
-    "output/video_results/annotations.json",
-    "ocsort",
+    annotated_path,
+    "bytetrack",
     output_dir="output",
     lost_track_buffer=90,   # any further kwargs go to the tracker class
 )
 ```
 
-## Training
+## Reproducibility
 
-To adapt the models to your own recordings, use `mouselite train` above — from a COCO
-dataset or straight from a DeepLabCut project. The code behind the *released* models
-— fine-tuning RF-DETR and the DeepLabCut SuperAnimal baseline, plus the scripts that
-scored them — lives in [`paper/`](paper/README.md). It is for reproducing the
-paper; to just run the models, use the package above.
+The code behind the *released* models — fine-tuning RF-DETR and the DeepLabCut SuperAnimal baseline,
+plus the scripts that scored them — lives in [`paper/`](paper/README.md). It is for reproducing the
+paper.
 
 ## Acknowledgements
 
