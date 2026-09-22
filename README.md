@@ -1,6 +1,6 @@
 # MouseLite
 
-<div align="center"><img src="assets/logo.svg" alt="MouseLite" width="300"></div>
+<div align="center"><img src="src/mouselite/assets/logo.svg" alt="MouseLite" width="300"></div>
 
 Real-time mouse detection, segmentation and pose estimation.
 

@@ -4,6 +4,7 @@ Install the extra and run with:
     uv run --extra app mouselite app
 """
 
+import re
 import tempfile
 from functools import lru_cache
 from pathlib import Path
@@ -15,9 +16,32 @@ from mouselite.models import MODELS, get_model
 from mouselite.pipeline import Pipeline
 from mouselite.tracker import TRACKERS, get_tracker, retrack
 
+ASSETS = Path(__file__).parent / "assets"
+LOGO, ICON = ASSETS / "logo.svg", ASSETS / "icon.svg"
+LOGO_HEIGHT = 60
+THEME = gr.themes.Cyberpunk(
+    primary_hue="violet",
+    secondary_hue="teal",
+    neutral_hue="slate",
+    font=gr.themes.GoogleFont("Inter"),  # the font the docs use
+)
 KINDS = list(MODELS)
 SIZES = list(MODELS["detection"])
 EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")
+
+
+def _header_html(height: int = LOGO_HEIGHT) -> str:
+    """Logo and tagline on one line, drawn in the app's own colours."""
+    logo = re.sub(r"<style>.*?</style>", "", LOGO.read_text(), flags=re.S)
+    logo = logo.replace(
+        "<svg ", f'<svg style="height:{height}px;width:auto;fill:currentColor" ', 1
+    )
+    return (
+        '<div style="display:flex;align-items:center;gap:14px;padding:4px 0 10px;'
+        'border-bottom:1px solid var(--border-color-primary)">'
+        f'{logo}<span style="color:var(--body-text-color-subdued)">'
+        "Run detection, segmentation or pose inference on mice videos.</span></div>"
+    )
 
 
 @lru_cache(maxsize=2)
@@ -101,9 +125,7 @@ def _toggle_size(kind):
 
 
 with gr.Blocks(title="MouseLite") as demo:
-    gr.Markdown(
-        "# MouseLite\nRun detection, segmentation or pose inference on mice videos.",
-    )
+    gr.HTML(_header_html(), padding=False, container=False)
 
     last_run = gr.State()
 
@@ -216,7 +238,8 @@ def main(
 ) -> None:
     """Serve the demo. Called by `mouselite app`."""
     demo.launch(
-        theme=gr.themes.Monochrome(),
+        theme=THEME,
+        favicon_path=str(ICON),
         share=share,
         server_name=host,
         server_port=port,

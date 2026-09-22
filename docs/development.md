@@ -90,8 +90,8 @@ uvx --with mkdocs-material mkdocs serve
 
 then open <http://127.0.0.1:8000>. `mkdocs build --strict` fails on broken links
 and missing anchors, so run it before committing. The theme colours come from the
-logo and live in `docs/stylesheets/extra.css`; `docs/assets/icon.svg` is the single
-mouse cut out of `assets/logo.svg` for the header and favicon.
+logo and live in `docs/stylesheets/extra.css`; the artwork itself lives in
+`src/mouselite/assets/`.
 
 Publishing is automatic: `.github/workflows/docs.yml` builds the site and deploys
 it to GitHub Pages on every push to `main` that touches `docs/` or `mkdocs.yml`
