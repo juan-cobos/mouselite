@@ -135,6 +135,8 @@ what they do and for the confidence caveat that applies to retracking.
 ```bash
 mouselite retrack output/cage_results/annotations.json --tracker ocsort
 mouselite retrack output/cage_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+```
+
 ## `mouselite train`
 
 ```

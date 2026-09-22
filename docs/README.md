@@ -14,13 +14,13 @@ Python API basics. The pages here go deeper.
 
 | Page | Read it when you want to… |
 | ---- | ------------------------- |
-| [Quick start](quick-start.md) | run one video, retrack it, try the demo |
+| [Quick start](quick-start.md) | install MouseLite and analyse your first video, step by step |
 | [How it works](how-it-works.md) | understand what happens to a frame between the video and the export |
 | [COCO export](coco-export.md) | analyse `annotations.json` in your own code |
 | [Trackers](trackers.md) | pick a tracker and tune it for your recordings |
 | [Fine-tuning](training.md) | train on your own frames when the released models fall short |
 | [CLI reference](cli.md) | see every command and option |
-| [Python API](python-api.md) | drive the pipeline from Python |
+| [Python API](python-api.md) | drive the pipeline, and analyse an export, from Python |
 | [Development](development.md) | run the tests, lint, or change the package |
 
 Training and evaluation code for the released models lives in

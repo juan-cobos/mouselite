@@ -152,6 +152,97 @@ for frame in sv.get_video_frames_generator("cage.mp4"):
 `_keypoints_to_detections` is private by name but stable in practice; it is the
 one conversion the pipeline relies on.
 
+## `mouselite.analysis`
+
+Downstream statistics from an export: `Tracks` lays a run out on a `(frame, track)`
+grid, and the free functions take arrays off that grid.
+
+### `Tracks.from_coco(annotations_path, fps=None, min_frames=1, masks=False) -> Tracks`
+
+Reads a MouseLite `annotations.json` back. Unconfirmed detections (`track_id == -1`)
+are dropped, as are tracks seen on fewer than `min_frames` frames. `fps` overrides the
+one recorded in the export's `info`, which matters for anything per second.
+`masks=True` also decodes a segmentation export's masks into a `(T, N, H, W)` bool
+array — one byte per pixel per track per frame, so a long recording at full resolution
+takes gigabytes.
+
+```python
+from mouselite import analysis
+
+tracks = analysis.Tracks.from_coco("output/cage_results/annotations.json", fps=30)
+```
+
+### `Tracks`
+
+| Attribute | Shape | What it holds |
+| --- | --- | --- |
+| `frame_index` | `(T,)` | the frame each row came from |
+| `track_ids` | `(N,)` | the animal each column belongs to |
+| `xyxy` | `(T, N, 4)` | boxes, NaN where the animal was not seen |
+| `area` | `(T, N)` | box or mask area, NaN where absent |
+| `keypoints` | `(T, N, K, 2)` | pose keypoints, or `None` |
+| `keypoint_names` | `K` names | the names the model was trained with |
+| `masks` | `(T, N, H, W)` | only with `masks=True`, else `None` |
+| `fps`, `image_size`, `video` | | what the export recorded about the video |
+
+Derived views: `n_frames`, `n_tracks`, `time` (seconds, needs `fps`), `present`
+`(T, N)` whether each animal was seen, `centroids` `(T, N, 2)` box centres,
+`keypoint(name_or_index)` `(T, N, 2)` for one named keypoint, and
+`select(track_ids)` for the same grid restricted to some animals.
+
+### `Tracks.summary(scale=1.0, immobile_below=None) -> DataFrame`
+
+One row per animal: `frames`, `first_frame`, `last_frame`, `coverage`, `distance`,
+`mean_speed`, `max_speed`, `mean_area`, plus `duration` when `fps` is known,
+`mean_elongation` for a segmentation export, and `immobile_fraction` when
+`immobile_below` is given. This is what `summary.csv` holds. `scale` converts pixels
+to your unit (cm per pixel), and applies to distances, speeds and areas.
+
+### `Tracks.to_dataframe() -> DataFrame`
+
+Long table, one row per `(frame, track)` the animal was seen on: `frame_index`,
+`time` when `fps` is known, `track_id`, `x`, `y`, the box corners, `area`, and a
+`<name>_x` / `<name>_y` pair per keypoint. This is what `trajectories.csv` holds.
+
+### `Tracks.to_deeplabcut(path=None, scorer="mouselite") -> DataFrame`
+
+The DeepLabCut-style prediction table most downstream tools read: columns
+`(scorer, [individuals,] bodyparts, coords)`, one row per frame. The `individuals`
+level is only added for multi-animal exports, as DLC does; without keypoints the box
+centre is written as a single `centroid` bodypart. MouseLite exports no per-keypoint
+confidence, so `likelihood` is 1 where a point was seen and 0 where it was not.
+Written to `path` as CSV, or HDF5 for a `.h5` suffix.
+
+### Kinematics, cleaning and space
+
+Every function takes plain arrays — `(T, N, 2)` positions off the grid — and returns
+arrays, so they compose with whatever you already use.
+
+| Function | Gives |
+| --- | --- |
+| `speed(xy, frame_index=None, fps=None, scale=1.0)` | `(T, N)` per frame, in units per second with `fps`, else per frame |
+| `distance_traveled(xy, scale=1.0)` | `(N,)` path length, ignoring gaps |
+| `heading(a, b)` | `(T, N)` angle from point `a` to point `b`, e.g. tail base to nose |
+| `keypoint_distance(a, b, scale=1.0)` | `(T, N)` distance between two keypoints |
+| `pairwise_distance(xy, scale=1.0)` | `(T, N, N)` distance between every pair of animals |
+| `interpolate(xy, max_gap=None)` | gaps of at most `max_gap` frames filled linearly, never extrapolating |
+| `smooth(xy, window=5)` | centred rolling median, DeepLabCut's default filter |
+| `in_polygon(xy, polygon)` | `(T, N)` whether each animal is inside a region |
+| `occupancy(xy, image_size, bins=32)` | `(N, rows, cols)` frames spent in each cell, for a heatmap |
+| `bouts(mask, min_frames=1)` | `(start, stop)` row ranges of each run of `True` in a 1D mask, `stop` exclusive |
+| `mask_centroids(masks)` | `(T, N, 2)` centre of mass of each segmentation mask |
+| `mask_axes(masks)` | major axis, minor axis and body angle of each mask; `major / minor` is how stretched the animal is |
+
+```python
+nose, tail = tracks.keypoint("nose"), tracks.keypoint("tail_base")
+xy = analysis.smooth(analysis.interpolate(tracks.centroids, max_gap=5))
+
+v = analysis.speed(xy, tracks.frame_index, tracks.fps, scale=0.05)  # cm/s
+facing = analysis.heading(tail, nose)
+apart = analysis.pairwise_distance(xy, scale=0.05)[:, 0, 1]         # animals 0 and 1
+close = analysis.bouts(apart < 4, min_frames=10)                    # contact episodes
+```
+
 ## `mouselite.train`
 
 ### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir="output/train", epochs=10, batch_size=4, **kwargs) -> None`

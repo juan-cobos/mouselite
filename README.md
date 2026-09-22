@@ -4,18 +4,22 @@
 
 Real-time mouse detection, segmentation and pose estimation.
 
-MouseLite wraps fine-tuned [RF-DETR](https://github.com/roboflow/rf-detr) models in a
-video pipeline: it predicts per frame, links predictions across frames with a
-multi-object tracker, writes an annotated video, and exports the predictions as a
-COCO dataset you can re-track or analyse later.
+MouseLite finds every mouse in a video, keeps its identity from frame to frame, and
+optionally places keypoints on its body. You get back an annotated video to check by
+eye, a COCO export, and CSV tables of positions and per-track statistics.
 
-Three model kinds trained on [MTMB](https://github.com/juan-cobos/mtmb) dataset are available:
+## What do you want to do?
 
-| Kind           | Sizes                             | Output                     |
-| -------------- | --------------------------------- | -------------------------- |
-| `detection`    | `nano`, `small`, `medium`, `large`| bounding boxes             |
-| `segmentation` | `nano`, `small`, `medium`, `large`| boxes + instance masks     |
-| `keypoints`    | single checkpoint                 | boxes + pose keypoints     |
+| You want to… | Use | What it takes |
+| --- | --- | --- |
+| Analyse videos by drag-and-drop | [the app](#the-app), in your browser | two lines in a terminal |
+| Analyse a folder of videos | [the CLI](#the-cli) | one line in a terminal |
+| Improve results on your own set-up | [fine-tuning](https://juan-cobos.github.io/mouselite/training/), which can reuse a DeepLabCut project | a few hundred labelled frames |
+| Build MouseLite into your own code | the [Python API](#python-api) | Python |
+
+If you have never used a terminal, start with the
+[quick start](https://juan-cobos.github.io/mouselite/quick-start/), which walks through
+every step.
 
 ## Installation
 
@@ -28,13 +32,34 @@ pip install "mouselite[train]"           # to fine-tune on your own data
 Requires Python ≥ 3.11. Model weights are downloaded from the Hugging Face Hub on
 first use and cached.
 
-## CLI
+## Models
+
+Three model kinds, fine-tuned from [RF-DETR](https://github.com/roboflow/rf-detr) on the
+[MTMB](https://github.com/juan-cobos/mtmb) dataset:
+
+| `--kind`       | `--size`                           | Output                     |
+| -------------- | ---------------------------------- | -------------------------- |
+| `detection`    | `nano`, `small`, `medium`, `large` | bounding boxes             |
+| `segmentation` | `nano`, `small`, `medium`, `large` | boxes + instance masks     |
+| `keypoints`    | single checkpoint                  | boxes + pose keypoints     |
+
+Tracking is handled by [trackers](https://github.com/roboflow/trackers).
+
+## The app
 
 ```bash
-mouselite --help
+uvx --from "mouselite[app]" mouselite app     # or: mouselite app
 ```
 
-### CLI examples
+Your browser opens on the app. Drop in a video, choose the **Kind** and the number of
+animals (**Max animals**), click **Run**, then watch the annotated video and download
+the results. If two mice swap identities after a contact, pick another **Tracker** and
+click **Retrack**: that takes seconds, because the mice are not detected again.
+
+On a slow computer, an **Inference stride** of 2 roughly halves the time by analysing
+one frame out of two.
+
+## The CLI
 
 ```bash
 # Run keypoints predictions on 'video.mp4' with maximum 2 animals and ocsort tracker
@@ -49,28 +74,18 @@ mouselite retrack output/video_results/annotations.json --tracker bytetrack --lo
 
 See [the docs](https://juan-cobos.github.io/mouselite/CLI/) for all the CLI options.
 
-### `app` — Gradio demo
+## Fine-tuning
 
-```bash
-mouselite app                       # needs the [app] extra
-```
-
-Upload a video, pick a model and tracker, run, download the annotated video with its
-COCO export and CSV tables, and retrack the same predictions with a different tracker
-without paying for inference again.
-
-### `train` — fine-tune when the released models fall short
-
-If the released weights don't perform well on your recordings, fine-tune them on a
-few hundred labeled frames of your own footage:
+If the released weights fall short on your recordings, fine-tune them on a few hundred
+labelled frames of your own footage:
 
 ```bash
 mouselite train dataset/ --kind keypoints --epochs 30
 ```
 
-`dataset/` is a COCO dataset with `train/` and `valid/` folders. If you're coming
-from DeepLabCut or Lightning Pose, point `train` at the project instead and add
-`--from`; the labeled frames are converted before training starts:
+`dataset/` is a COCO dataset with `train/` and `valid/` folders. Coming from DeepLabCut
+or Lightning Pose, point `train` at the project and add `--from`; the labelled frames
+are converted before training starts:
 
 ```bash
 mouselite train dlc-project/ --kind keypoints --from deeplabcut --epochs 30
@@ -83,37 +98,50 @@ Then run your videos with the new weights:
 mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_best_ema.pth
 ```
 
-See [the docs](https://juan-cobos.github.io/mouselite/training/) for the options and
+See [Fine-tuning](https://juan-cobos.github.io/mouselite/training/) for the options and
 what the conversion does.
 
 ## Python API
 
-The CLI is a thin wrapper over three pieces: a model, a tracker, and a `Pipeline`
-that joins them.
+The CLI is a thin wrapper over three pieces: a model, a tracker, and a `Pipeline` that
+joins them.
 
 ```python
 from mouselite.models import get_model
 from mouselite.pipeline import Pipeline
-from mouselite.tracker import get_tracker
+from mouselite.tracker import get_tracker, retrack
 
-model = get_model("keypoints")
-tracker = get_tracker("ocsort")
-
-pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2)
+pipeline = Pipeline(get_model("keypoints"), get_tracker("ocsort"), threshold=0.5, top_k=2)
 annotated_path = pipeline.run("video.mp4", output_dir="output")
+
 retracked_path = retrack(
-    annotated_path,
+    "output/video_results/annotations.json",
     "bytetrack",
     output_dir="output",
     lost_track_buffer=90,   # any further kwargs go to the tracker class
 )
 ```
 
+## If something goes wrong
+
+- **`uvx` is not recognised**: open a new terminal after installing uv.
+- **A video does not play in the browser**: the analysis is fine; download it and open
+  it with [VLC](https://www.videolan.org/vlc/).
+- **Mice are missed, or keypoints land in the wrong place**: try a lower `--threshold`,
+  then [fine-tune](https://juan-cobos.github.io/mouselite/training/).
+- **Anything else**: [open an issue](https://github.com/juan-cobos/mouselite/issues) with
+  what the terminal shows.
+
 ## Reproducibility
 
-The code behind the *released* models — fine-tuning RF-DETR and the DeepLabCut SuperAnimal baseline,
-plus the scripts that scored them — lives in [`paper/`](paper/README.md). It is for reproducing the
-paper.
+The code behind the *released* models — fine-tuning RF-DETR and the DeepLabCut
+SuperAnimal baseline, plus the scripts that scored them — lives in
+[`paper/`](paper/README.md). It is for reproducing the paper.
+
+## Citation
+
+If MouseLite helps your research, please cite the accompanying paper (reference coming
+soon).
 
 ## Acknowledgements
 
