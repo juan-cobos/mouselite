@@ -9,14 +9,14 @@ title: Overview
 
 # Documentation
 
-The [top-level README](https://github.com/juan-cobos/mouselite#readme) covers install, the CLI essentials and the
-Python API basics. The pages here go deeper.
+MouseLite finds every mouse in a video, keeps its identity from frame to frame, and
+optionally places keypoints on its body. You get back an annotated video to check by
+eye, a COCO export, and CSV tables of positions and per-track statistics.
 
 | Page | Read it when you want to… |
 | ---- | ------------------------- |
 | [Quick start](quick-start.md) | install MouseLite and analyse your first video, step by step |
 | [How it works](how-it-works.md) | understand what happens to a frame between the video and the export |
-| [COCO export](coco-export.md) | analyse `annotations.json` in your own code |
 | [Trackers](trackers.md) | pick a tracker and tune it for your recordings |
 | [Fine-tuning](training.md) | train on your own frames when the released models fall short |
 | [CLI reference](cli.md) | see every command and option |

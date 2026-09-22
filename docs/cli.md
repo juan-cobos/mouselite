@@ -41,7 +41,8 @@ and writes, per video:
 ```
 
 where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
-each video on success. The export format is described in [COCO export](coco-export.md).
+each video on success. `annotations.json` is a COCO detection/keypoint file, with the
+frame index, a track id per annotation and the video's frame rate added.
 `trajectories.csv` is the same data as a long table with one row per frame and track
 (box centre, box, area and keypoints); `summary.csv` has one row per track (frames
 seen, coverage, distance, mean and max speed, duration, mean area). Both are in

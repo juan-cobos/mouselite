@@ -131,5 +131,5 @@ and the CSV files.
   start and faster per frame. Watch it as it runs with `--show`.
 - For cm instead of px, gap filling or smoothing, use
   [`mouselite.analysis`](python-api.md#mouseliteanalysis).
-- Every option: [CLI reference](cli.md). What's in `annotations.json`:
-  [COCO export](coco-export.md). Which tracker to pick: [Trackers](trackers.md).
+- Every option: [CLI reference](cli.md). Which tracker to pick:
+  [Trackers](trackers.md).
