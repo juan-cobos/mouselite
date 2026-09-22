@@ -19,6 +19,7 @@ from mouselite.tracker import TRACKERS, get_tracker, retrack
 ASSETS = Path(__file__).parent / "assets"
 LOGO, ICON = ASSETS / "logo.svg", ASSETS / "icon.svg"
 LOGO_HEIGHT = 60
+REPO = "https://github.com/juan-cobos/mouselite"
 THEME = gr.themes.Cyberpunk(
     primary_hue="violet",
     secondary_hue="teal",
@@ -202,6 +203,15 @@ with gr.Blocks(title="MouseLite") as demo:
                 label="Inference stride",
                 info="Run inference on 1 of every N frames.",
             )
+    gr.HTML(
+        '<div style="text-align:center;padding:10px 0;'
+        "border-top:1px solid var(--border-color-primary);"
+        'color:var(--body-text-color-subdued)">'
+        f'<a href="{REPO}" target="_blank" rel="noopener" style="color:inherit">'
+        "MouseLite on GitHub</a></div>",
+        padding=False,
+        container=False,
+    )
 
     kind.change(_toggle_size, inputs=kind, outputs=model_size)
 
