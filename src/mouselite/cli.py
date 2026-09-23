@@ -82,6 +82,7 @@ def run(
 @app.command()
 def retrack(
     annotations_path: Path,
+    video_path: Path,
     tracker: Annotated[str, typer.Option(help="One of the trackers from list-trackers.")],
     output_dir: Path = Path("output"),
     lost_track_buffer: Annotated[
@@ -94,7 +95,8 @@ def retrack(
     ] = None,
     show_progress: bool = True,
 ) -> None:
-    """Re-run tracking on a previously exported COCO dataset, without running inference."""
+    """Re-run tracking on a previously exported COCO dataset and the video it came from,
+    without running inference."""
     from mouselite.tracker import retrack as retrack_video
 
     tracker_kwargs = {
@@ -103,6 +105,7 @@ def retrack(
     }
     output = retrack_video(
         annotations_path,
+        video_path,
         tracker,
         output_dir=output_dir,
         show_progress=show_progress,

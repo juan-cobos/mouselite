@@ -36,13 +36,12 @@ and writes, per video:
     ├── <stem>_annotated.mp4
     ├── annotations.json
     ├── trajectories.csv
-    ├── summary.csv
-    └── images/
+    └── summary.csv
 ```
 
 where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
 each video on success. `annotations.json` is a COCO detection/keypoint file, with the
-frame index, a track id per annotation and the video's frame rate added.
+frame index, a confidence `score` and track id per annotation, and the video's frame rate added.
 `trajectories.csv` is the same data as a long table with one row per frame and track
 (box centre, box, area and keypoints); `summary.csv` has one row per track (frames
 seen, coverage, distance, mean and max speed, duration, mean area). Both are in
@@ -111,13 +110,14 @@ mouselite run recordings/ extra.mp4 --kind keypoints --top-k 2
 ## `mouselite retrack`
 
 ```
-mouselite retrack ANNOTATIONS_PATH --tracker TRACKER [OPTIONS]
+mouselite retrack ANNOTATIONS_PATH VIDEO_PATH --tracker TRACKER [OPTIONS]
 ```
 
-Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`,
-with its `images/` folder beside it) through a fresh tracker. No model is loaded.
+Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`)
+through a fresh tracker, reading frames from `VIDEO_PATH`, the video it was made from.
+No model is loaded.
 
-Writes `<output-dir>/<stem>_retracked.mp4` (at 30 fps), where `<stem>` is the export
+Writes `<output-dir>/<stem>_retracked.mp4` (at the source's frame rate), where `<stem>` is the export
 folder's name minus `_results`, rewrites `track_id` on every annotation **in place**,
 and regenerates `trajectories.csv` and `summary.csv` beside the annotations.
 
@@ -131,11 +131,11 @@ and regenerates `trajectories.csv` and `summary.csv` beside the annotations.
 
 The two tracker options are forwarded to the tracker's constructor only when given,
 so omitting them keeps the tracker's own defaults. See [Trackers](trackers.md) for
-what they do and for the confidence caveat that applies to retracking.
+what they do.
 
 ```bash
-mouselite retrack output/cage_results/annotations.json --tracker ocsort
-mouselite retrack output/cage_results/annotations.json --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/cage_results/annotations.json cage.mp4 --tracker ocsort
+mouselite retrack output/cage_results/annotations.json cage.mp4 --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 ## `mouselite train`

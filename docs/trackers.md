@@ -31,8 +31,8 @@ inference again:
 
 ```bash
 mouselite run video.mp4 --kind keypoints --top-k 2            # ocsort, once
-mouselite retrack output/video_results/annotations.json --tracker bytetrack
-mouselite retrack output/video_results/annotations.json --tracker botsort
+mouselite retrack output/video_results/annotations.json video.mp4 --tracker bytetrack
+mouselite retrack output/video_results/annotations.json video.mp4 --tracker botsort
 ```
 
 Each `retrack` overwrites `track_id` in the export and writes

@@ -5,6 +5,7 @@ from typing import ClassVar
 import cv2
 import numpy as np
 import pandas as pd
+import pytest
 import supervision as sv
 from trackers.core.base import BaseTracker
 
@@ -82,6 +83,7 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert "frame_index" in coco["images"][0]
     assert "keypoints" in coco["annotations"][0]
     assert coco["annotations"][0]["track_id"] == 0
+    assert coco["annotations"][0]["score"] == pytest.approx(0.9)
 
     trajectories = pd.read_csv(tmp_path / "output" / "smoke_results" / "trajectories.csv")
     assert len(trajectories) == len(coco["annotations"])

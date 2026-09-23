@@ -69,7 +69,7 @@ mouselite run video.mp4 --kind keypoints --top-k 2 --tracker ocsort
 mouselite run /my-folder/ --kind keypoints --top-k 2 --tracker ocsort
 
 # Re-run tracking without re-running inference 
-mouselite retrack output/video_results/annotations.json --tracker bytetrack --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/video_results/annotations.json video.mp4 --tracker bytetrack --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 See [the docs](https://juan-cobos.github.io/mouselite/CLI/) for all the CLI options.
@@ -116,6 +116,7 @@ annotated_path = pipeline.run("video.mp4", output_dir="output")
 
 retracked_path = retrack(
     "output/video_results/annotations.json",
+    "video.mp4",
     "bytetrack",
     output_dir="output",
     lost_track_buffer=90,   # any further kwargs go to the tracker class
