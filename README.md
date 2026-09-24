@@ -13,7 +13,7 @@ eye, a COCO export, and CSV tables of positions and per-track statistics.
 | You want to… | Use | What it takes |
 | --- | --- | --- |
 | Analyse videos by drag-and-drop | [the app](#the-app), in your browser | two lines in a terminal |
-| Analyse a folder of videos | [the CLI](#the-cli) | one line in a terminal |
+| Batch-analyse a folder of videos | [the CLI](#the-cli) | one line in a terminal |
 | Improve results on your own set-up | [fine-tuning](https://juan-cobos.github.io/mouselite/training/), which can reuse a DeepLabCut project | a few hundred labelled frames |
 | Build MouseLite into your own code | the [Python API](#python-api) | Python |
 
@@ -29,8 +29,7 @@ pip install "mouselite[app]"             # with the Gradio demo
 pip install "mouselite[train]"           # to fine-tune on your own data
 ```
 
-Requires Python ≥ 3.11. Model weights are downloaded from the Hugging Face Hub on
-first use and cached.
+Requires Python ≥ 3.11.
 
 ## Models
 
@@ -65,7 +64,7 @@ one frame out of two.
 # Run keypoints predictions on 'video.mp4' with maximum 2 animals and bytetrack tracker
 mouselite run video.mp4 --kind keypoints --top-k 2 --tracker bytetrack
 
-# Same but on all videos in the directory
+# Batch analysis: pass a folder to process every video in it
 mouselite run /my-folder/ --kind keypoints --top-k 2 --tracker bytetrack
 
 # Re-run tracking without re-running inference 
