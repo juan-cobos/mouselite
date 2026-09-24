@@ -143,7 +143,7 @@ with gr.Blocks(title="MouseLite") as demo:
         run_btn = gr.Button("Run", variant="primary", size="lg")
         retrack_btn = gr.Button("Retrack", size="lg")
     exports_out = gr.File(
-        label="Results: COCO export, trajectories and summary",
+        label="Results",
         file_count="multiple",
         interactive=False,
         visible=False,
