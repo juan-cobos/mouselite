@@ -39,7 +39,7 @@ frame ──▶ is frame_idx % every == 0 ?
               │
         tracker.update()        (skipped when top_k == 1)
               │
-        write frame to images/  +  append COCO image & annotations
+        append COCO image (with frame_index) & annotations
               │
               └──────────────┬─────────────────────────┘
                              ▼
@@ -68,15 +68,14 @@ across frames. `run` and `retrack` share the annotator, so the two videos look a
 
 ## The `retrack` path
 
-`retrack` never touches a model. It loads the export, feeds each frame's detections to
-a fresh tracker in the order the images sort, writes `<stem>_retracked.mp4` from the
-exported frames, and rewrites `track_id` on every annotation in place. Two consequences
-of replaying from COCO rather than from the model:
+`retrack` never touches a model. It reads the source video and the export side by
+side, matching frames to COCO images by `frame_index`, feeds each exported frame's
+detections to a fresh tracker, writes `<stem>_retracked.mp4`, and rewrites `track_id`
+on every annotation in place. Each annotation's `score` (the model's confidence) is
+fed back to the tracker, so confidence-based trackers such as ByteTrack behave as they
+would on a live run. Exports written before `score` was added have none, and every
+detection is then seen at `1.0`.
 
-- **Confidence is gone.** COCO has no score field, so trackers see every detection at
-  `1.0`. ByteTrack-family trackers use a second, low-confidence association stage that
-  never has anything to do on a retrack: tune with `retrack`, but expect small
-  differences if you then re-run inference with the tracker you picked.
-- **Only exported frames exist.** If you ran with `--every 3`, the retracked video has
-  a third of the frames. It is always written at 30 fps, so it plays faster or slower
-  than the source unless the source was 30 fps with `--every 1`.
+- **`every` carries over.** If you ran with `--every 3`, the tracker sees a third of
+  the frames, as it did during `run`; the retracked video still has every frame of the
+  source, at its frame rate, with in-between frames drawn from the last exported one.

@@ -62,14 +62,14 @@ one frame out of two.
 ## The CLI
 
 ```bash
-# Run keypoints predictions on 'video.mp4' with maximum 2 animals and ocsort tracker
-mouselite run video.mp4 --kind keypoints --top-k 2 --tracker ocsort
+# Run keypoints predictions on 'video.mp4' with maximum 2 animals and bytetrack tracker
+mouselite run video.mp4 --kind keypoints --top-k 2 --tracker bytetrack
 
 # Same but on all videos in the directory
-mouselite run /my-folder/ --kind keypoints --top-k 2 --tracker ocsort
+mouselite run /my-folder/ --kind keypoints --top-k 2 --tracker bytetrack
 
 # Re-run tracking without re-running inference 
-mouselite retrack output/video_results/annotations.json --tracker bytetrack --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/video_results/annotations.json video.mp4 --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 See [the docs](https://juan-cobos.github.io/mouselite/CLI/) for all the CLI options.
@@ -111,11 +111,12 @@ from mouselite.models import get_model
 from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker, retrack
 
-pipeline = Pipeline(get_model("keypoints"), get_tracker("ocsort"), threshold=0.5, top_k=2)
+pipeline = Pipeline(get_model("keypoints"), get_tracker("bytetrack"), threshold=0.5, top_k=2)
 annotated_path = pipeline.run("video.mp4", output_dir="output")
 
 retracked_path = retrack(
     "output/video_results/annotations.json",
+    "video.mp4",
     "bytetrack",
     output_dir="output",
     lost_track_buffer=90,   # any further kwargs go to the tracker class

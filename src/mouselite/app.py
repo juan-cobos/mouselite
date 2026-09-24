@@ -97,7 +97,7 @@ def run_inference(
 
     # Pipeline writes the COCO export and CSV tables next to the annotated video.
     results_dir = video_out_path.parent
-    state = {"results_dir": str(results_dir)}
+    state = {"results_dir": str(results_dir), "video_path": str(video_path)}
     return str(video_out_path), _exports(results_dir), state
 
 
@@ -114,6 +114,7 @@ def run_retrack(
     progress(0, desc=f"Retracking with {tracker_type}...")
     target = retrack(
         Path(state["results_dir"]) / "annotations.json",
+        state["video_path"],
         tracker_type,
         output_dir=_tmp_dir("mouselite_retrack_"),
     )
@@ -165,7 +166,7 @@ with gr.Blocks(title="MouseLite") as demo:
             )
             tracker_type = gr.Dropdown(
                 choices=list(TRACKERS),
-                value="ocsort",
+                value="bytetrack",
                 label="Tracker",
                 info="Multi-object tracking algorithm.",
             )

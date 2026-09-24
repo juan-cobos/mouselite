@@ -60,16 +60,17 @@ Returns `TRACKERS[name](**kwargs)`. Raises `ValueError` listing the valid names 
 an unknown `name`. `run` calls it with no keyword arguments; frame-based settings
 such as `lost_track_buffer` count the frames the tracker actually sees.
 
-### `retrack(annotations_path, tracker, output_dir="output", show_progress=True, **tracker_kwargs) -> Path`
+### `retrack(annotations_path, video_path, tracker, output_dir="output", show_progress=True, **tracker_kwargs) -> Path`
 
 Replay an export through a tracker; see [How it works](how-it-works.md#the-retrack-path)
 for the mechanics and caveats.
 
 | Parameter | Meaning |
 | --------- | ------- |
-| `annotations_path` | the `annotations.json`; `images/` must be beside it |
+| `annotations_path` | the `annotations.json` written by `Pipeline.run` |
+| `video_path` | the video the export was made from; frames are matched by `frame_index` |
 | `tracker` | a key of `TRACKERS` (a name, not an instance) |
-| `output_dir` | where `<stem>_retracked.mp4` is written, at 30 fps |
+| `output_dir` | where `<stem>_retracked.mp4` is written, at the source's frame rate |
 | `**tracker_kwargs` | forwarded to the tracker constructor |
 
 Returns the path of the retracked video. Side effect: `track_id` is rewritten on
@@ -95,7 +96,8 @@ A `Pipeline` is reusable: `run` calls `tracker.reset()` first. It is not thread-
 
 Processes the whole video and returns the annotated video's path,
 `<output_dir>/<stem>_results/<stem>_annotated.mp4`. The COCO export goes beside it as
-`annotations.json`, with frames in an `images/` folder. `show` opens an OpenCV window; `hud` burns in an FPS
+`annotations.json`; each image records its `frame_index` in the video rather than
+being written to disk. `show` opens an OpenCV window; `hud` burns in an FPS
 counter.
 
 ```python
@@ -104,7 +106,7 @@ from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker
 
 model = get_model("keypoints")
-tracker = get_tracker("ocsort", lost_track_buffer=60)
+tracker = get_tracker("bytetrack", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
 video = pipeline.run("cage.mp4", output_dir="output")

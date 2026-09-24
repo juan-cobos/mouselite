@@ -50,12 +50,21 @@ def _detections_to_coco(
     image_id: int,
     annotation_id: int,
 ) -> tuple[list[dict], int]:
-    """Build COCO annotation dicts for one image, adding `track_id` and `keypoints`."""
+    """Build COCO annotation dicts for one image, adding `score`, `track_id` and
+    `keypoints`."""
     coco_annotations, annotation_id = detections_to_coco_annotations(
         detections,
         image_id,
         annotation_id,
     )
+
+    if detections.confidence is not None:
+        for annotation, score in zip(
+            coco_annotations,
+            detections.confidence,
+            strict=True,
+        ):
+            annotation["score"] = float(score)
 
     if detections.tracker_id is not None:
         for annotation, track_id in zip(
@@ -154,8 +163,7 @@ class Pipeline:
         annotations_path = results_dir / "annotations.json"
         trajectories_path = results_dir / "trajectories.csv"
         summary_path = results_dir / "summary.csv"
-        images_dir = results_dir / "images"
-        images_dir.mkdir(parents=True, exist_ok=True)
+        results_dir.mkdir(parents=True, exist_ok=True)
 
         detections = sv.Detections.empty()
         fps_monitor = sv.FPSMonitor() if hud else None
@@ -192,13 +200,13 @@ class Pipeline:
                 else:
                     detections = self.tracker.update(detections, frame=frame)
 
-                image_path = images_dir / f"{video_path.stem}_{frame_idx:06d}.jpg"
-                cv2.imwrite(str(image_path), frame)
+                # Frames are not written out: `frame_index` maps each image back to
+                # the source video, which is what `retrack` reads them from.
                 image_id = len(coco["images"]) + 1
                 coco["images"].append(
                     {
                         "id": image_id,
-                        "file_name": image_path.name,
+                        "file_name": f"{video_path.stem}_{frame_idx:06d}.jpg",
                         "height": frame.shape[0],
                         "width": frame.shape[1],
                         "frame_index": frame_idx,
