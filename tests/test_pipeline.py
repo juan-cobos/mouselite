@@ -38,6 +38,17 @@ class EmptyEveryOtherModel(FakeKeypointModel):
         return super().predict(frame, threshold)
 
 
+class RecordingModel(FakeKeypointModel):
+    """Keeps every frame it is asked to predict on."""
+
+    def __init__(self) -> None:
+        self.frames: list[np.ndarray] = []
+
+    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+        self.frames.append(frame)
+        return super().predict(frame, threshold)
+
+
 class FakeTracker(BaseTracker):
     def __init__(self) -> None:
         self.updates = 0
@@ -109,3 +120,24 @@ def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:
     assert len(coco["annotations"]) == 3
     assert {a["track_id"] for a in coco["annotations"]} == {0}
     assert {a["image_id"] for a in coco["annotations"]} == {1, 3, 5}
+
+
+def test_run_feeds_model_rgb(tmp_path: Path) -> None:
+    """A pure blue video reaches the model as blue in RGB order, not BGR."""
+    video_path = tmp_path / "blue.mp4"
+    writer = cv2.VideoWriter(str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 10, (64, 64))
+    for _ in range(3):
+        writer.write(np.full((64, 64, 3), (255, 0, 0), dtype=np.uint8))  # BGR blue
+    writer.release()
+
+    model = RecordingModel()
+    Pipeline(model=model, tracker=FakeTracker()).run(
+        video_path,
+        output_dir=tmp_path / "output",
+        show_progress=False,
+    )
+
+    assert model.frames
+    red, _, blue = model.frames[0].reshape(-1, 3).mean(axis=0)
+    assert blue > 200
+    assert red < 50

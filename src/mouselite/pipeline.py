@@ -176,7 +176,9 @@ class Pipeline:
         def callback(frame: np.ndarray, frame_idx: int) -> np.ndarray:
             nonlocal detections, next_annotation_id
             if frame_idx % self.every == 0:
-                detections = self.model.predict(frame, threshold=self.threshold)
+                # Video frames are BGR; the models are trained on (and expect) RGB.
+                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                detections = self.model.predict(rgb, threshold=self.threshold)
                 if isinstance(detections, sv.KeyPoints):
                     detections = _keypoints_to_detections(detections)
                 detections = detections.with_nms(threshold=self.nms_threshold)
