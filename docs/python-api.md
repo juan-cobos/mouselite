@@ -67,7 +67,7 @@ for the mechanics and caveats.
 
 | Parameter | Meaning |
 | --------- | ------- |
-| `annotations_path` | the `annotations.json` written by `Pipeline.run` |
+| `annotations_path` | the `<stem>_annotations.json` written by `Pipeline.run` |
 | `video_path` | the video the export was made from; frames are matched by `frame_index` |
 | `tracker` | a key of `TRACKERS` (a name, not an instance) |
 | `output_dir` | where `<stem>_retracked.mp4` is written, at the source's frame rate |
@@ -96,7 +96,7 @@ A `Pipeline` is reusable: `run` calls `tracker.reset()` first. It is not thread-
 
 Processes the whole video and returns the annotated video's path,
 `<output_dir>/<stem>_results/<stem>_annotated.mp4`. The COCO export goes beside it as
-`annotations.json`; each image records its `frame_index` in the video rather than
+`<stem>_annotations.json`; each image records its `frame_index` in the video rather than
 being written to disk. `show` opens an OpenCV window; `hud` burns in an FPS
 counter.
 
@@ -110,7 +110,7 @@ tracker = get_tracker("bytetrack", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
 video = pipeline.run("cage.mp4", output_dir="output")
-export = video.parent / "annotations.json"
+export = video.parent / "cage_annotations.json"
 ```
 
 To process several videos with one loaded model, reuse the `Pipeline`: `run` resets
@@ -161,7 +161,7 @@ grid, and the free functions take arrays off that grid.
 
 ### `Tracks.from_coco(annotations_path, fps=None, min_frames=1, masks=False) -> Tracks`
 
-Reads a MouseLite `annotations.json` back. Unconfirmed detections (`track_id == -1`)
+Reads a MouseLite `<stem>_annotations.json` back. Unconfirmed detections (`track_id == -1`)
 are dropped, as are tracks seen on fewer than `min_frames` frames. `fps` overrides the
 one recorded in the export's `info`, which matters for anything per second.
 `masks=True` also decodes a segmentation export's masks into a `(T, N, H, W)` bool
@@ -171,7 +171,7 @@ takes gigabytes.
 ```python
 from mouselite import analysis
 
-tracks = analysis.Tracks.from_coco("output/cage_results/annotations.json", fps=30)
+tracks = analysis.Tracks.from_coco("output/cage_results/cage_annotations.json", fps=30)
 ```
 
 ### `Tracks`
@@ -197,14 +197,14 @@ Derived views: `n_frames`, `n_tracks`, `time` (seconds, needs `fps`), `present`
 One row per animal: `frames`, `first_frame`, `last_frame`, `coverage`, `distance`,
 `mean_speed`, `max_speed`, `mean_area`, plus `duration` when `fps` is known,
 `mean_elongation` for a segmentation export, and `immobile_fraction` when
-`immobile_below` is given. This is what `summary.csv` holds. `scale` converts pixels
+`immobile_below` is given. This is what `<stem>_summary.csv` holds. `scale` converts pixels
 to your unit (cm per pixel), and applies to distances, speeds and areas.
 
 ### `Tracks.to_dataframe() -> DataFrame`
 
 Long table, one row per `(frame, track)` the animal was seen on: `frame_index`,
 `time` when `fps` is known, `track_id`, `x`, `y`, the box corners, `area`, and a
-`<name>_x` / `<name>_y` pair per keypoint. This is what `trajectories.csv` holds.
+`<name>_x` / `<name>_y` pair per keypoint. This is what `<stem>_trajectories.csv` holds.
 
 ### `Tracks.to_deeplabcut(path=None, scorer="mouselite") -> DataFrame`
 

@@ -40,7 +40,7 @@ def test_run_batch(tmp_path: Path, monkeypatch) -> None:
         for stem in ("a", "b", "c")
     ]
     for stem in ("a", "b", "c"):
-        assert (output_dir / f"{stem}_results" / "annotations.json").exists()
+        assert (output_dir / f"{stem}_results" / f"{stem}_annotations.json").exists()
 
 
 def test_run_batch_into_the_recordings_folder(tmp_path: Path, monkeypatch) -> None:

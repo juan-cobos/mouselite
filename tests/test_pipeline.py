@@ -88,7 +88,7 @@ def test_run_keypoints(tmp_path: Path) -> None:
     )
     assert annotated_video.exists()
 
-    annotations_path = tmp_path / "output" / "smoke_results" / "annotations.json"
+    annotations_path = tmp_path / "output" / "smoke_results" / "smoke_annotations.json"
     coco = json.loads(annotations_path.read_text())
     assert coco["images"]
     assert "frame_index" in coco["images"][0]
@@ -96,10 +96,11 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert coco["annotations"][0]["track_id"] == 0
     assert coco["annotations"][0]["score"] == pytest.approx(0.9)
 
-    trajectories = pd.read_csv(tmp_path / "output" / "smoke_results" / "trajectories.csv")
+    results_dir = tmp_path / "output" / "smoke_results"
+    trajectories = pd.read_csv(results_dir / "smoke_trajectories.csv")
     assert len(trajectories) == len(coco["annotations"])
     assert {"frame_index", "time", "track_id", "x", "y"} <= set(trajectories.columns)
-    summary = pd.read_csv(tmp_path / "output" / "smoke_results" / "summary.csv")
+    summary = pd.read_csv(results_dir / "smoke_summary.csv")
     assert summary.track_id.tolist() == [0]
     assert {"frames", "distance", "mean_speed", "duration"} <= set(summary.columns)
 
@@ -115,7 +116,7 @@ def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:
 
     assert tracker.updates == 0
 
-    annotations_path = tmp_path / "output" / "smoke_results" / "annotations.json"
+    annotations_path = tmp_path / "output" / "smoke_results" / "smoke_annotations.json"
     coco = json.loads(annotations_path.read_text())
     assert len(coco["images"]) == 6
     # one annotation per detected frame, none for the empty ones
