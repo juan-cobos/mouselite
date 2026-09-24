@@ -19,19 +19,20 @@ algorithms by name. It adds nothing on top: `get_tracker(name, **kwargs)` is
 
 - **One animal**: it doesn't matter. Pass `--top-k 1` and the pipeline skips the
   tracker entirely (see [How it works](how-it-works.md)).
-- **Two or more animals, fixed camera**: `ocsort`, the default. It interpolates
-  through occlusions and penalises sudden direction changes, which is what keeps
-  identities from swapping when the animals huddle or cross. If tracks fragment
-  instead — ids changing without any crossing — try `bytetrack`, whose
-  low-confidence second pass is more forgiving of detection flicker.
+- **Two or more animals, fixed camera**: `bytetrack`, the default. Its
+  low-confidence second pass keeps a track alive through the frames where the model
+  is briefly unsure of a mouse, instead of dropping it and starting a new id.
+- **Animals that huddle or climb over each other**: if ids swap after contact, try
+  `ocsort` with a longer buffer (`--lost-track-buffer 60`). It penalises sudden
+  direction changes, which is what keeps two touching mice apart.
 - **Moving camera**: `botsort`.
 
 `retrack` exists so you can try these on the same predictions without paying for
 inference again:
 
 ```bash
-mouselite run video.mp4 --kind keypoints --top-k 2            # ocsort, once
-mouselite retrack output/video_results/annotations.json video.mp4 --tracker bytetrack
+mouselite run video.mp4 --kind keypoints --top-k 2            # bytetrack, once
+mouselite retrack output/video_results/annotations.json video.mp4 --tracker ocsort --lost-track-buffer 60
 mouselite retrack output/video_results/annotations.json video.mp4 --tracker botsort
 ```
 

@@ -105,7 +105,7 @@ Results land in an `output` folder created where the terminal is; add
 To try another tracker without running inference again:
 
 ```bash
-uvx mouselite retrack output/video_results/annotations.json video.mp4 --tracker bytetrack
+uvx mouselite retrack output/video_results/annotations.json video.mp4 --tracker ocsort
 ```
 
 That writes `output/video_retracked.mp4` and updates `track_id` in `annotations.json`

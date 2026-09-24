@@ -106,7 +106,7 @@ from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker
 
 model = get_model("keypoints")
-tracker = get_tracker("ocsort", lost_track_buffer=60)
+tracker = get_tracker("bytetrack", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
 video = pipeline.run("cage.mp4", output_dir="output")

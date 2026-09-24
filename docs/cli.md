@@ -73,7 +73,7 @@ Applied in this order, on every inference frame:
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--tracker` | `ocsort` | One of `list-trackers`. See [Trackers](trackers.md). |
+| `--tracker` | `bytetrack` | One of `list-trackers`. See [Trackers](trackers.md). |
 
 `run` constructs the tracker with its defaults. To pass tracker arguments, use
 `retrack` or the [Python API](python-api.md).
@@ -92,7 +92,7 @@ Applied in this order, on every inference frame:
 
 ```bash
 # Pose on two animals, every other frame, watch it as it goes
-mouselite run cage.mp4 --kind keypoints --top-k 2 --every 2 --tracker ocsort --show
+mouselite run cage.mp4 --kind keypoints --top-k 2 --every 2 --tracker bytetrack --show
 
 # Segmentation with the largest model, half precision, compiled
 mouselite run cage.mp4 --kind segmentation --size large --dtype float16 --compile

@@ -166,7 +166,7 @@ with gr.Blocks(title="MouseLite") as demo:
             )
             tracker_type = gr.Dropdown(
                 choices=list(TRACKERS),
-                value="ocsort",
+                value="bytetrack",
                 label="Tracker",
                 info="Multi-object tracking algorithm.",
             )
