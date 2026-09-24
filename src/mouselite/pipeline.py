@@ -155,14 +155,14 @@ class Pipeline:
         hud: bool = False,
     ) -> Path:
         """Run inference on `video_path`, writing an annotated video, a COCO export, and
-        `trajectories.csv` / `summary.csv`."""
+        `<stem>_trajectories.csv` / `<stem>_summary.csv`."""
         self.tracker.reset()
         video_path = Path(video_path)
         results_dir = Path(output_dir) / f"{video_path.stem}_results"
         target = results_dir / f"{video_path.stem}_annotated.mp4"
-        annotations_path = results_dir / "annotations.json"
-        trajectories_path = results_dir / "trajectories.csv"
-        summary_path = results_dir / "summary.csv"
+        annotations_path = results_dir / f"{video_path.stem}_annotations.json"
+        trajectories_path = results_dir / f"{video_path.stem}_trajectories.csv"
+        summary_path = results_dir / f"{video_path.stem}_summary.csv"
         results_dir.mkdir(parents=True, exist_ok=True)
 
         detections = sv.Detections.empty()

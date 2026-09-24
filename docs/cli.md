@@ -34,16 +34,16 @@ and writes, per video:
 <output-dir>/
 └── <stem>_results/
     ├── <stem>_annotated.mp4
-    ├── annotations.json
-    ├── trajectories.csv
-    └── summary.csv
+    ├── <stem>_annotations.json
+    ├── <stem>_trajectories.csv
+    └── <stem>_summary.csv
 ```
 
 where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
-each video on success. `annotations.json` is a COCO detection/keypoint file, with the
+each video on success. `<stem>_annotations.json` is a COCO detection/keypoint file, with the
 frame index, a confidence `score` and track id per annotation, and the video's frame rate added.
-`trajectories.csv` is the same data as a long table with one row per frame and track
-(box centre, box, area and keypoints); `summary.csv` has one row per track (frames
+`<stem>_trajectories.csv` is the same data as a long table with one row per frame and track
+(box centre, box, area and keypoints); `<stem>_summary.csv` has one row per track (frames
 seen, coverage, distance, mean and max speed, duration, mean area). Both are in
 pixels and, using the video's frame rate, seconds; the tracks are raw. For real-world
 units, gap filling and smoothing, see [`mouselite.analysis`](python-api.md#mouseliteanalysis).
@@ -113,13 +113,14 @@ mouselite run recordings/ extra.mp4 --kind keypoints --top-k 2
 mouselite retrack ANNOTATIONS_PATH VIDEO_PATH --tracker TRACKER [OPTIONS]
 ```
 
-Replays the export at `ANNOTATIONS_PATH` (an `annotations.json` written by `run`)
+Replays the export at `ANNOTATIONS_PATH` (a `<stem>_annotations.json` written by `run`)
 through a fresh tracker, reading frames from `VIDEO_PATH`, the video it was made from.
 No model is loaded.
 
 Writes `<output-dir>/<stem>_retracked.mp4` (at the source's frame rate), where `<stem>` is the export
 folder's name minus `_results`, rewrites `track_id` on every annotation **in place**,
-and regenerates `trajectories.csv` and `summary.csv` beside the annotations.
+and regenerates `<stem>_trajectories.csv` and `<stem>_summary.csv` beside the annotations,
+where this `<stem>` is `VIDEO_PATH`'s file name without extension.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
@@ -134,8 +135,8 @@ so omitting them keeps the tracker's own defaults. See [Trackers](trackers.md) f
 what they do.
 
 ```bash
-mouselite retrack output/cage_results/annotations.json cage.mp4 --tracker ocsort
-mouselite retrack output/cage_results/annotations.json cage.mp4 --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
+mouselite retrack output/cage_results/cage_annotations.json cage.mp4 --tracker ocsort
+mouselite retrack output/cage_results/cage_annotations.json cage.mp4 --tracker ocsort --lost-track-buffer 90 --minimum-iou-threshold 0.15
 ```
 
 ## `mouselite train`
@@ -210,7 +211,7 @@ without it the command exits with status 1 and an install hint.
 | `--port` | Gradio's (`7860`) | Port to bind. |
 
 The demo uploads a video, runs `run` with the chosen kind/size/tracker/thresholds
-into a temp directory, offers `annotations.json`, `trajectories.csv` and `summary.csv`
+into a temp directory, offers `<stem>_annotations.json`, `<stem>_trajectories.csv` and `<stem>_summary.csv`
 for download, and can `retrack` the same predictions with another tracker (which
 refreshes the downloads). Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.

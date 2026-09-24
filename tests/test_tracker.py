@@ -38,7 +38,7 @@ def make_export(
     every: int = 1,
     keypoints: bool = False,
 ) -> tuple[Path, Path]:
-    """Write a video and a COCO export of it (annotations.json) for retrack() to read."""
+    """Write a video and a COCO export of it for retrack() to read."""
     video_path = tmp_path / "video.mp4"
     writer = cv2.VideoWriter(
         str(video_path), cv2.VideoWriter_fourcc(*"mp4v"), 10, (size, size)
@@ -74,7 +74,7 @@ def make_export(
 
     results_dir = tmp_path / "video_results"
     results_dir.mkdir()
-    annotations_path = results_dir / "annotations.json"
+    annotations_path = results_dir / "video_annotations.json"
     coco = {
         "info": {"video": video_path.name, "fps": 10, "total_frames": frames},
         "categories": [{"id": 1, "name": "mouse", "supercategory": "common-objects"}],
@@ -120,7 +120,7 @@ def test_retrack_carries_keypoints(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_retrack_writes_track_ids(tmp_path: Path, monkeypatch) -> None:
-    """retrack() writes the new track ids back into annotations.json."""
+    """retrack() writes the new track ids back into the annotations export."""
     monkeypatch.setitem(TRACKERS, "fake", FakeTracker)
     annotations_path, video_path = make_export(tmp_path, frames=2)
     assert "track_id" not in json.loads(annotations_path.read_text())["annotations"][0]
@@ -135,7 +135,7 @@ def test_retrack_writes_track_ids(tmp_path: Path, monkeypatch) -> None:
 
     coco = json.loads(annotations_path.read_text())
     assert [a["track_id"] for a in coco["annotations"]] == [0, 0]
-    for name in ("trajectories.csv", "summary.csv"):
+    for name in ("video_trajectories.csv", "video_summary.csv"):
         assert (annotations_path.parent / name).exists()
 
 

@@ -69,7 +69,7 @@ def retrack(
     Frames are read from `video_path` and matched to the export by `frame_index`;
     frames the export skipped (`every` > 1) keep the last frame's detections.
     Writes the retracked video, updates each annotation's `track_id` in place, and
-    rewrites `trajectories.csv` / `summary.csv` beside the annotations.
+    rewrites `<stem>_trajectories.csv` / `<stem>_summary.csv` beside the annotations.
     `tracker` is a name from `TRACKERS`; `tracker_kwargs` go to its constructor.
     """
     annotations_path = Path(annotations_path)
@@ -123,6 +123,7 @@ def retrack(
 
     save_json_file(coco, file_path=str(annotations_path))
     tracks = Tracks.from_coco(annotations_path)
-    tracks.to_dataframe().to_csv(annotations_path.parent / "trajectories.csv", index=False)
-    tracks.summary().to_csv(annotations_path.parent / "summary.csv", index=False)
+    prefix = annotations_path.parent / Path(video_path).stem
+    tracks.to_dataframe().to_csv(f"{prefix}_trajectories.csv", index=False)
+    tracks.summary().to_csv(f"{prefix}_summary.csv", index=False)
     return target

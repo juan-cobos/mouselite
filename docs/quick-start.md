@@ -80,8 +80,8 @@ stride** to 2 roughly halves the time, because MouseLite then analyses one frame
 two. If two mice swap identities after a contact, choose another **Tracker** and click
 **Retrack**: this takes seconds, since the mice are not detected again.
 
-You get three kinds of result: `annotations.json` in the COCO format, `trajectories.csv`, and `summary.csv`, the
-distance and speed of each animal.
+You get three kinds of result, each named after your video: `video_annotations.json` in the COCO format,
+`video_trajectories.csv`, and `video_summary.csv`, the distance and speed of each animal.
 
 Always watch the annotated video before trusting the numbers. If mice are missed or
 points land in the wrong place, you can [fine-tune MouseLite](training.md) on a few
@@ -105,10 +105,10 @@ Results land in an `output` folder created where the terminal is; add
 To try another tracker without running inference again:
 
 ```bash
-uvx mouselite retrack output/video_results/annotations.json video.mp4 --tracker ocsort
+uvx mouselite retrack output/video_results/video_annotations.json video.mp4 --tracker ocsort
 ```
 
-That writes `output/video_retracked.mp4` and updates `track_id` in `annotations.json`
+That writes `output/video_retracked.mp4` and updates `track_id` in `video_annotations.json`
 and the CSV files.
 
 ## If something goes wrong

@@ -28,7 +28,7 @@ THEME = gr.themes.Cyberpunk(
 )
 KINDS = list(MODELS)
 SIZES = list(MODELS["detection"])
-EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")
+EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")  # each <stem>_-prefixed
 
 
 def _header_html(height: int = LOGO_HEIGHT) -> str:
@@ -55,9 +55,10 @@ def _tmp_dir(prefix: str = "mouselite_") -> Path:
     return Path(tempfile.mkdtemp(prefix=prefix))
 
 
-def _exports(results_dir: str | Path):
-    """Value for the downloads component: the COCO export and CSV tables in `results_dir`."""
-    files = [str(Path(results_dir) / name) for name in EXPORTS]
+def _exports(results_dir: str | Path, video_path: str | Path):
+    """Value for the downloads component: the COCO export and CSV tables for a run."""
+    stem = Path(video_path).stem
+    files = [str(Path(results_dir) / f"{stem}_{name}") for name in EXPORTS]
     return gr.update(value=files, visible=True)
 
 
@@ -98,7 +99,7 @@ def run_inference(
     # Pipeline writes the COCO export and CSV tables next to the annotated video.
     results_dir = video_out_path.parent
     state = {"results_dir": str(results_dir), "video_path": str(video_path)}
-    return str(video_out_path), _exports(results_dir), state
+    return str(video_out_path), _exports(results_dir, video_path), state
 
 
 def run_retrack(
@@ -112,13 +113,14 @@ def run_retrack(
         return None, gr.update()
 
     progress(0, desc=f"Retracking with {tracker_type}...")
+    stem = Path(state["video_path"]).stem
     target = retrack(
-        Path(state["results_dir"]) / "annotations.json",
+        Path(state["results_dir"]) / f"{stem}_annotations.json",
         state["video_path"],
         tracker_type,
         output_dir=_tmp_dir("mouselite_retrack_"),
     )
-    return str(target), _exports(state["results_dir"])
+    return str(target), _exports(state["results_dir"], state["video_path"])
 
 
 def _toggle_size(kind):
