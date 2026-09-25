@@ -16,6 +16,7 @@ from trackers import (
 
 from mouselite.analysis import Tracks
 from mouselite.pipeline import MetaAnnotator
+from mouselite.query import QueryTracker
 
 TRACKERS = {
     "sort": SORTTracker,
@@ -27,7 +28,12 @@ TRACKERS = {
 }
 
 
-def get_tracker(name: str, **kwargs):
+def get_tracker(name: str, query: str | None = None, **kwargs):
+    """Build tracker `name` with `kwargs`, or a `QueryTracker` when `query` is given."""
+    if query is not None:
+        if kwargs:
+            raise ValueError(f"A query takes no tracker options, got {sorted(kwargs)}")
+        return QueryTracker(query)
     if name not in TRACKERS:
         raise ValueError(f"Unknown tracker {name!r}. Available: {list(TRACKERS)}")
     return TRACKERS[name](**kwargs)
@@ -59,7 +65,7 @@ def _rows_to_detections(rows: list[dict]) -> sv.Detections:
 def retrack(
     annotations_path: str | Path,
     video_path: str | Path,
-    tracker: str,
+    tracker: str | None,
     output_dir: str | Path = "output",
     show_progress: bool = True,
     **tracker_kwargs,
@@ -70,7 +76,8 @@ def retrack(
     frames the export skipped (`every` > 1) keep the last frame's detections.
     Writes the retracked video, updates each annotation's `track_id` in place, and
     rewrites `<stem>_trajectories.csv` / `<stem>_summary.csv` beside the annotations.
-    `tracker` is a name from `TRACKERS`; `tracker_kwargs` go to its constructor.
+    `tracker` and `tracker_kwargs` go to `get_tracker`, so `query=...` with
+    `tracker=None` labels by a rule instead.
     """
     annotations_path = Path(annotations_path)
     with open(annotations_path) as f:

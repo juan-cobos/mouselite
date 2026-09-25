@@ -6,6 +6,11 @@ import typer
 app = typer.Typer(no_args_is_help=True)
 
 VIDEO_SUFFIXES = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+QUERY_HELP = (
+    "Assign ids by a rule instead of a tracker, e.g. 'id0.y > id1.y'. Fields: x, y "
+    "(box centre), xyxy[1], confidence, class_id, area, box_area and data keys such "
+    "as keypoints_xy[3, 0]. Replaces --tracker; --top-k defaults to the number of ids."
+)
 
 
 def _video_files(paths: list[Path]) -> list[Path]:
@@ -32,6 +37,10 @@ def run(
     size: str = "medium",
     checkpoint: Path | None = None,
     tracker: str = "bytetrack",
+    query: Annotated[
+        str | None,
+        typer.Option(help=QUERY_HELP),
+    ] = None,
     threshold: float = 0.5,
     nms_threshold: float = 0.5,
     top_k: int | None = None,
@@ -59,7 +68,9 @@ def run(
         batch_size=batch_size,
         compile=compile,
     )
-    tracker_instance = get_tracker(tracker)
+    tracker_instance = get_tracker(tracker, query=query)
+    if query is not None and top_k is None:
+        top_k = tracker_instance.k
     pipeline = Pipeline(
         model,
         tracker_instance,
@@ -83,7 +94,14 @@ def run(
 def retrack(
     annotations_path: Path,
     video_path: Path,
-    tracker: Annotated[str, typer.Option(help="One of the trackers from list-trackers.")],
+    tracker: Annotated[
+        str | None,
+        typer.Option(help="One of the trackers from list-trackers."),
+    ] = None,
+    query: Annotated[
+        str | None,
+        typer.Option(help=QUERY_HELP),
+    ] = None,
     output_dir: Path = Path("output"),
     lost_track_buffer: Annotated[
         int | None,
@@ -99,7 +117,10 @@ def retrack(
     without running inference."""
     from mouselite.tracker import retrack as retrack_video
 
+    if (tracker is None) == (query is None):
+        raise typer.BadParameter("Pass exactly one of --tracker and --query.")
     tracker_kwargs = {
+        "query": query,
         "lost_track_buffer": lost_track_buffer,
         "minimum_iou_threshold": minimum_iou_threshold,
     }
