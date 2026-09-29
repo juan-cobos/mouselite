@@ -18,8 +18,12 @@ MODELS = {
     "keypoints": "RFDETRKeypointPreview",
 }
 
-HF_REPO_ID = "mouselite/mouselite"  # TODO: placeholder for HF model weights repo
-WEIGHTS = "mouselite-{kind}-{size}.pt"
+HF_REPO_ID = "juancobos/mouselite"
+WEIGHTS = {
+    "detection": "mouselite-det-{size}.pth",
+    "segmentation": "mouselite-seg-{size}.pth",
+    "keypoints": "mouselite-keypoints.pth",
+}
 
 BASE = "base"  # rfdetr's own pretrained weights, the fine-tuning starting point
 MOUSELITE = "mouselite"  # our fine-tuned weights from HF_REPO_ID
@@ -33,11 +37,7 @@ def build_model(kind: str, size: str = "medium", weights: str | Path = MOUSELITE
     if weights == BASE:
         return cls()  # rfdetr downloads its default pretrain_weights itself
     if weights == MOUSELITE:
-        if kind == "keypoints":
-            filename = f"mouselite-{kind}.pt"
-        else:
-            filename = WEIGHTS.format(kind=kind, size=size)
-        weights = hf_hub_download(repo_id=HF_REPO_ID, filename=filename)
+        weights = hf_hub_download(HF_REPO_ID, WEIGHTS[kind].format(size=size))
     return cls(pretrain_weights=str(weights))
 
 
