@@ -34,7 +34,7 @@ prints it.
 | --------- | ---- | ------- |
 | `kind` | `str` | key of `MODELS` |
 | `size` | `str` | key of `MODELS[kind]`; ignored for `"keypoints"` |
-| `checkpoint` | `str \| Path \| None` | local weights. When `None`, `mouselite-<kind>-<size>.pt` (or `mouselite-keypoints.pt`) is fetched from the Hugging Face Hub and cached |
+| `checkpoint` | `str \| Path \| None` | local weights. When `None`, `mouselite-{det,seg}-<size>.pth` (or `mouselite-keypoints.pth`) is fetched from [juancobos/mouselite](https://huggingface.co/juancobos/mouselite) and cached |
 | `dtype` | `str` | passed to `model.inference`; any `torch.dtype` name |
 | `batch_size` | `int` | passed to `model.inference`; only used when `compile=True` |
 | `compile` | `bool` | passed to `model.inference`; traces with `torch.jit.trace` |

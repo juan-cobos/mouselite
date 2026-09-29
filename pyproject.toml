@@ -3,6 +3,8 @@ name = "mouselite"
 version = "0.1.1"
 description = "Real-time mouse detection, segmentation and pose estimation."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "Juan Cobos", email = "juan.cobos@igf.cnrs.fr" }
 ]
