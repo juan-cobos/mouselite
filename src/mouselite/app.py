@@ -11,6 +11,7 @@ from pathlib import Path
 
 import gradio as gr
 import supervision as sv
+from huggingface_hub import snapshot_download
 
 from mouselite.models import MODELS, get_model
 from mouselite.pipeline import Pipeline
@@ -29,6 +30,7 @@ THEME = gr.themes.Cyberpunk(
 KINDS = list(MODELS)
 SIZES = list(MODELS["detection"])
 EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")  # each <stem>_-prefixed
+EXAMPLES_REPO = "juancobos/MultiTaskMouseBehaviour"  # one 10 s clip per behavioural task
 
 
 def _header_html(height: int = LOGO_HEIGHT) -> str:
@@ -49,6 +51,18 @@ def _header_html(height: int = LOGO_HEIGHT) -> str:
 def _load_model(kind: str, size: str):
     """Cache weights so repeated runs don't re-download and re-init the model."""
     return get_model(kind, size=size)
+
+
+def _example_videos() -> list[Path]:
+    """The dataset's example clips, cached after the first download; none when offline."""
+    try:
+        root = snapshot_download(
+            EXAMPLES_REPO, repo_type="dataset", allow_patterns="assets/examples/*.mp4"
+        )
+    except Exception as exc:
+        print(f"Skipping the example videos, could not download them: {exc}")
+        return []
+    return sorted(Path(root, "assets", "examples").glob("*.mp4"))
 
 
 def _tmp_dir(prefix: str = "mouselite_") -> Path:
@@ -128,6 +142,8 @@ def _toggle_size(kind):
     return gr.update(interactive=kind != "keypoints")
 
 
+EXAMPLE_VIDEOS = _example_videos()
+
 with gr.Blocks(title="MouseLite") as demo:
     gr.HTML(_header_html(), padding=False, container=False)
 
@@ -140,6 +156,14 @@ with gr.Blocks(title="MouseLite") as demo:
             height=420,
         )
         video_out = gr.Video(label="Annotated output", interactive=False, height=420)
+
+    if EXAMPLE_VIDEOS:
+        with gr.Accordion("Examples", open=True):
+            examples = gr.Examples(
+                [[str(video)] for video in EXAMPLE_VIDEOS],
+                inputs=video_in,
+            )
+            examples.dataset.show_label = False  # the accordion carries the title
 
     with gr.Row():
         run_btn = gr.Button("Run", variant="primary", size="lg")
@@ -258,6 +282,8 @@ def main(
         server_port=port,
         footer_links=[],
         inbrowser=inbrowser,
+        # the clips live in the HF cache, outside the cwd and temp dirs gradio serves
+        allowed_paths=[str(path) for path in EXAMPLE_VIDEOS],
     )
 
 
