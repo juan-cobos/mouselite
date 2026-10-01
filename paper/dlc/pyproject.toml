@@ -18,13 +18,10 @@ version = "0.1.0"
 description = "Training and evaluation for DeepLabCut."
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "deeplabcut @ git+https://github.com/DeepLabCut/DeepLabCut.git",
+    "deeplabcut==3.0.1",
     "faster-coco-eval>=1.6",
-    "mtmb",
+    "mtmb>0.1.0",
 ]
-
-[tool.uv.sources]
-"mtmb" = { path = "../../../mtmb" }
 
 [tool.ruff]
 extend = "../../pyproject.toml"

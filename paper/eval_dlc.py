@@ -23,18 +23,19 @@ from deeplabcut.pose_estimation_pytorch.modelzoo.inference_helpers import (
     create_superanimal_inference_runners,
 )
 from mtmb.splits import to_deeplabcut
+
 from src.data import (
     DATASETS_DIR,
     DLC_SUFFIX,
     EVERY,
     OKS_SIGMA,
     RUNS_DIR,
-    loo_split_name,
+    build_leave_one_out,
     mouse_dataset,
 )
 from src.score import evaluate
 from src.utils import report_metrics
-from train_dlc import MAX_INDIVIDUALS, VALID_MODE
+from train_dlc import VALID_MODE, instances_per_image
 
 SUPER_ANIMAL = "superanimal_topviewmouse"
 MODEL_NAME = "hrnet_w32"
@@ -67,17 +68,7 @@ def zero_shot_project(dataset_dir: Path) -> Path:
 
 def zero_shot_splits() -> list[Path]:
     """One export per held-out task, under this sweep's fold numbering."""
-    dataset = mouse_dataset()
-    base = loo_split_name(EVERY, VALID_MODE)
-
-    splits = []
-    for fold, task in enumerate(dataset.tasks):
-        name = f"{base}_fold_{fold:02d}_{dataset.task(task).value}"
-        if built := sorted(p for p in DATASETS_DIR.glob(f"{name}*") if p.is_dir()):
-            splits.append(built[-1])
-        else:
-            print(f"  skipping fold {fold:02d}: no export at {DATASETS_DIR / name}")
-    return splits
+    return build_leave_one_out(EVERY, valid_mode=VALID_MODE)
 
 
 def fold_key(dataset_dir: Path) -> str:
@@ -222,8 +213,11 @@ def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]
     annotations = add_heldout_split(run_dir, dataset_dir)
 
     checkpoints = run_dir / "checkpoints"
+    # Zero-shot has no project to read a count from, so the fold's own held-out
+    # frames set it: a fixed cap either drops animals or invites spurious ones.
+    fold_individuals = instances_per_image(run_dir, HELDOUT) if zero_shot else None
     config = (
-        superanimal_config(run_dir, MAX_INDIVIDUALS)
+        superanimal_config(run_dir, fold_individuals)
         if zero_shot
         else checkpoints / "pytorch_config.yaml"
     )
@@ -236,14 +230,8 @@ def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]
     # Reads the images off disk and rewrites ``file_name`` to an absolute path,
     # which is the key ``predictions_to_coco`` looks predictions up by.
     data = loader.load_data("test")
-    paths = {
-        Path(image["file_name"]).name: image["file_name"] for image in data["images"]
-    }
-    individuals = (
-        MAX_INDIVIDUALS
-        if zero_shot
-        else loader.get_dataset_parameters().max_num_animals
-    )
+    paths = {Path(image["file_name"]).name: image["file_name"] for image in data["images"]}
+    individuals = fold_individuals or loader.get_dataset_parameters().max_num_animals
     print(f"  {len(paths)} images   max individuals {individuals}")
 
     predictions = predict_split(

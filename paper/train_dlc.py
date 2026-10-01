@@ -6,6 +6,7 @@ from deeplabcut.pose_estimation_pytorch.modelzoo.train_from_coco import adaptati
 from deeplabcut.pose_estimation_pytorch.modelzoo.utils import (
     get_super_animal_snapshot_path,
 )
+
 from src.data import (
     EVERY,
     build_leave_one_out,
@@ -48,9 +49,7 @@ def drop_unlabelled_instances(project_root: Path) -> None:
         path = project_root / "annotations" / f"{split}.json"
         coco = json.loads(path.read_text())
         kept = [
-            ann
-            for ann in coco["annotations"]
-            if any(v > 0 for v in ann["keypoints"][2::3])
+            ann for ann in coco["annotations"] if any(v > 0 for v in ann["keypoints"][2::3])
         ]
         dropped = len(coco["annotations"]) - len(kept)
         if dropped:

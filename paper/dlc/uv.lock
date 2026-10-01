@@ -290,7 +290,7 @@ wheels = [
 [[package]]
 name = "deeplabcut"
 version = "3.0.1"
-source = { git = "https://github.com/DeepLabCut/DeepLabCut.git#2df0f46c8c8c56c8238b46b3d58384163bafb2f0" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "albumentations" },
     { name = "dlclibrary" },
@@ -321,6 +321,10 @@ dependencies = [
     { name = "torch" },
     { name = "torchvision" },
     { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/66/40adece6b767289f56916ebe7af473b1055025f6d1124a324d9ac40b9001/deeplabcut-3.0.1.tar.gz", hash = "sha256:4c33c8ff4dc15b26f7844945aef5542c2a0055c8ed663040e6ab8dd253e71a52", size = 1414914, upload-time = "2026-07-27T17:12:43.469Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2b/61/e311e5c76404138ffd8444dc21bf9637138f4481c8e0988261e5e195494f/deeplabcut-3.0.1-py3-none-any.whl", hash = "sha256:45d815d3c735a340d9d76fb4c68e406f1b521d8f853b403aba3e58c96b71e503", size = 1628682, upload-time = "2026-07-27T17:12:41.857Z" },
 ]
 
 [[package]]
@@ -743,9 +747,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "deeplabcut", git = "https://github.com/DeepLabCut/DeepLabCut.git" },
+    { name = "deeplabcut", specifier = "==3.0.1" },
     { name = "faster-coco-eval", specifier = ">=1.6" },
-    { name = "mtmb", directory = "../../../mtmb" },
+    { name = "mtmb", specifier = ">0.1.0" },
 ]
 
 [[package]]
@@ -778,26 +782,17 @@ wheels = [
 
 [[package]]
 name = "mtmb"
-version = "0.1.0"
-source = { directory = "../../../mtmb" }
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "huggingface-hub" },
     { name = "opencv-python" },
     { name = "supervision" },
     { name = "typer" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "opencv-python", specifier = ">=4.9" },
-    { name = "supervision", specifier = ">=0.30.0" },
-    { name = "typer", specifier = ">=0.27.1" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pre-commit", specifier = ">=4.6.2" },
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "ruff", specifier = ">=0.16.2" },
+sdist = { url = "https://files.pythonhosted.org/packages/5a/bd/89ea4bbc8e3513cd05e4c564787311e13ba16115f2f2af3ece81bf41577f/mtmb-0.1.1.tar.gz", hash = "sha256:229aa636b09faa6de5b7546f7a7f276d57025eba67708e90f61f017aa325cf91", size = 21411, upload-time = "2026-10-01T10:02:54.953Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/3e/61969ca76da8fbd73ce161c866da48d1afd45b0dfa326ffbdb7bb68a0481/mtmb-0.1.1-py3-none-any.whl", hash = "sha256:6126edcb71831b739be544f37b90757776a0b2d375961d778aa50bfc3713c1b9", size = 27074, upload-time = "2026-10-01T10:02:53.397Z" },
 ]
 
 [[package]]

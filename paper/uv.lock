@@ -1569,7 +1569,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "mtmb", specifier = ">=0.1.0" },
+    { name = "mtmb", specifier = ">0.1.0" },
     { name = "rfdetr", extras = ["loggers", "train", "visual"], specifier = ">=1.9.0" },
     { name = "supervision", specifier = ">=0.29" },
 ]
@@ -1585,16 +1585,17 @@ wheels = [
 
 [[package]]
 name = "mtmb"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "huggingface-hub" },
     { name = "opencv-python" },
     { name = "supervision" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/47/5fa0b344c3235e15c79d53b4b8b061e80d23ec403b88cd154cb3e593cd9e/mtmb-0.1.0.tar.gz", hash = "sha256:2e1eaecf788d835640de666b76597be705cc8d6d283210513b04ef3757b3c6e5", size = 19617, upload-time = "2026-09-15T09:59:17.575Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/bd/89ea4bbc8e3513cd05e4c564787311e13ba16115f2f2af3ece81bf41577f/mtmb-0.1.1.tar.gz", hash = "sha256:229aa636b09faa6de5b7546f7a7f276d57025eba67708e90f61f017aa325cf91", size = 21411, upload-time = "2026-10-01T10:02:54.953Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/e0/af8d35363c0b3d6bb8ce0bd35dc548609401cfdf756901043b9c4dab3655/mtmb-0.1.0-py3-none-any.whl", hash = "sha256:c64d0177d3a8d2495326b7ed4619459d61a218b7cef9ed6b5ae51c045a4a08d2", size = 24656, upload-time = "2026-09-15T09:59:16.413Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/3e/61969ca76da8fbd73ce161c866da48d1afd45b0dfa326ffbdb7bb68a0481/mtmb-0.1.1-py3-none-any.whl", hash = "sha256:6126edcb71831b739be544f37b90757776a0b2d375961d778aa50bfc3713c1b9", size = 27074, upload-time = "2026-10-01T10:02:53.397Z" },
 ]
 
 [[package]]

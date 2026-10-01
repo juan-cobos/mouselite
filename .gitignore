@@ -13,6 +13,8 @@ wheels/
 
 output/
 runs/
+datasets/
+mtmb_dataset/
 /scripts/
 
 .gradio/

@@ -30,18 +30,20 @@ SPLIT_SEED = 0
 #: Held-out (test) task -> the valid assay replacing the rotation's; test is untouched.
 LOO_VALID_OVERRIDE = {"direct_interaction": "nort"}
 
-#: ``mtmb`` is installed as a copy, so its own ``DEFAULT_PATH`` points inside
-#: site-packages: read the tasks from the sibling checkout, export to this project.
-#: Two parents up from ``paper/`` (this project's root) reaches ``pyProjects/``.
-MTMB_DATASET_DIR = ROOT.parent.parent / "mtmb" / "dataset"
+MTMB_DATASET_DIR = ROOT / "mtmb_dataset"
 DATASETS_DIR = ROOT / "datasets"
 
 
 def mouse_dataset() -> MouseDataset:
-    """The sibling ``mtmb`` checkout, exporting into this project's ``datasets/``."""
-    if not MTMB_DATASET_DIR.is_dir():
-        raise SystemExit(f"no mtmb dataset at {MTMB_DATASET_DIR}")
+    """The downloaded tasks, exporting into this project's ``datasets/``."""
     return MouseDataset(path=MTMB_DATASET_DIR, build_root=DATASETS_DIR)
+
+
+def downloaded_dataset() -> MouseDataset:
+    """``mouse_dataset``, fetched from the Hub first; files already current are skipped."""
+    dataset = mouse_dataset()
+    dataset.download()
+    return dataset
 
 
 def pooled_split_name(every: int) -> str:
@@ -56,7 +58,7 @@ def build_pooled(every: int, rebuild: bool = False) -> Path:
     train/test -- a ceiling, not a generalisation estimate. A matching export is
     reused; ``rebuild`` relinks it.
     """
-    dataset = mouse_dataset()
+    dataset = downloaded_dataset()
     manifest = dataset.split_random(
         ratios=POOLED_RATIOS,
         name=pooled_split_name(every),
@@ -94,7 +96,7 @@ def build_leave_one_out(
     ``folds`` builds only that many, the held-out tasks drawn under ``SPLIT_SEED``
     -- nine folds is nine fits. Each is still trained on every task but its own.
     """
-    dataset = mouse_dataset()
+    dataset = downloaded_dataset()
     manifests = dataset.split_leave_one_out(
         name=loo_split_name(every, valid_mode),
         valid_fraction=LOO_VALID_FRACTION,
@@ -132,7 +134,7 @@ def build_loo_override(
             f"the valid override is an out_domain rule, not {valid_mode!r}",
         )
 
-    dataset = mouse_dataset()
+    dataset = downloaded_dataset()
     tasks = [dataset.task(t).value for t in dataset.tasks]
     held_out = dataset.task(held_out).value
     if held_out not in LOO_VALID_OVERRIDE:
