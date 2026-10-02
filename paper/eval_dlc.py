@@ -1,15 +1,19 @@
 """Score DeepLabCut on the held-out split of a run, or of a fold zero-shot.
 
-    uv run --project dlc python eval_dlc.py [--zero-shot] [run or split ...]
+    uv run --project dlc python eval_dlc.py [--zero-shot] [--model=NAME]
+        [--detector=NAME] [run or split ...]
 
 Without ``--zero-shot`` the argument is a run directory and what is scored are the
 snapshots it adapted. With it, the argument is an export under ``datasets/`` and
 what is scored are the SuperAnimal weights as DeepLabCut publishes them -- no
 fitting anywhere, the same held-out splits, so the two columns line up.
 
-Zero-shot collects into ``ZERO_SHOT_DIR``: one project per fold, holding the split
+Zero-shot collects into ``zero_shot_dir``: one project per fold, holding the split
 it was scored over and the predictions made against it, and every fold's scores
 flat alongside them, named by fold so a plot can read the sweep as one series.
+``--model``/``--detector`` pick the vendor pair to score, and each pair collects in
+its own directory under ``ZERO_SHOT_ROOT``. An adapted run needs neither: it is
+scored with the pair its own config says it was fitted from.
 """
 
 import json
@@ -35,11 +39,15 @@ from src.data import (
 )
 from src.score import evaluate
 from src.utils import report_metrics
-from train_dlc import VALID_MODE, instances_per_image
+from train_dlc import (
+    DETECTOR_NAME,
+    MODEL_NAME,
+    SUPER_ANIMAL,
+    VALID_MODE,
+    instances_per_image,
+    model_tag,
+)
 
-SUPER_ANIMAL = "superanimal_topviewmouse"
-MODEL_NAME = "hrnet_w32"
-DETECTOR_NAME = "fasterrcnn_resnet50_fpn_v2"
 BATCH_SIZE = 8
 DETECTOR_BATCH_SIZE = 2
 
@@ -49,7 +57,9 @@ DETECTOR_BATCH_SIZE = 2
 HELDOUT = "heldout"
 
 ZERO_SHOT_FLAG = "--zero-shot"
-ZERO_SHOT_DIR = RUNS_DIR / "zeroshot"
+MODEL_FLAG = "--model="
+DETECTOR_FLAG = "--detector="
+ZERO_SHOT_ROOT = RUNS_DIR / "zeroshot"
 
 
 def dlc_runs() -> list[Path]:
@@ -61,9 +71,22 @@ def dlc_runs() -> list[Path]:
     return trained
 
 
-def zero_shot_project(dataset_dir: Path) -> Path:
-    """Where one fold's zero-shot project is built, under ``ZERO_SHOT_DIR``."""
-    return ZERO_SHOT_DIR / fold_key(dataset_dir)
+def zero_shot_dir(model_name: str, detector_name: str) -> Path:
+    """Where one vendor pair's zero-shot sweep collects, under ``ZERO_SHOT_ROOT``."""
+    return ZERO_SHOT_ROOT / model_tag(model_name, detector_name)
+
+
+def zero_shot_project(dataset_dir: Path, model_name: str, detector_name: str) -> Path:
+    """Where one fold's zero-shot project is built, under its pair's sweep."""
+    return zero_shot_dir(model_name, detector_name) / fold_key(dataset_dir)
+
+
+def fitted_models(config: Path) -> tuple[str, str]:
+    """The pose and detector names a run's own config was built for."""
+    pose_config = PoseConfig.from_any(config)
+    if pose_config.detector is None:
+        raise SystemExit(f"no detector in {config}")
+    return pose_config.net_type.value, pose_config.detector.model.variant
 
 
 def zero_shot_splits() -> list[Path]:
@@ -93,12 +116,17 @@ def split_dir(arg: str) -> Path:
     raise SystemExit(f"no split at {arg} or {DATASETS_DIR / arg}")
 
 
-def superanimal_config(project_root: Path, max_individuals: int) -> Path:
+def superanimal_config(
+    project_root: Path,
+    max_individuals: int,
+    model_name: str,
+    detector_name: str,
+) -> Path:
     """Write the vendor model's own inference config into a zero-shot project."""
     config = PoseConfig.build_for_superanimal_inference(
         super_animal=SUPER_ANIMAL,
-        model_name=MODEL_NAME,
-        detector_name=DETECTOR_NAME,
+        model_name=model_name,
+        detector_name=detector_name,
         max_individuals=max_individuals,
     )
     path = project_root / "pytorch_config.yaml"
@@ -110,8 +138,9 @@ def superanimal_config(project_root: Path, max_individuals: int) -> Path:
 def dataset_for_run(run_dir: Path) -> Path:
     """The RF-DETR export holding the split this run was cut from.
 
-    Normally the run directory is the export's name plus ``_dlc``. A renamed run
-    no longer says, so the manifest the export carried is read back:
+    An older run directory is the export's name plus ``_dlc``. One named by its
+    models as well, or renamed, no longer says, so the manifest the export carried
+    is read back:
     ``runs/pooled_dlc`` came from ``pooled_every10``, and going by the directory
     alone would look for a split that was never built.
     """
@@ -145,6 +174,8 @@ def best_snapshot(checkpoints: Path, detector: bool = False) -> Path:
 
 
 def predict_split(
+    model_name: str,
+    detector_name: str,
     customized_model_config: Path,
     customized_detector_checkpoint: Path | None,
     customized_pose_checkpoint: Path | None,
@@ -159,8 +190,8 @@ def predict_split(
     """
     pose_runner, detector_runner, _ = create_superanimal_inference_runners(
         superanimal_name=SUPER_ANIMAL,
-        model_name=MODEL_NAME,
-        detector_name=DETECTOR_NAME,
+        model_name=model_name,
+        detector_name=detector_name,
         max_individuals=max_individuals,
         batch_size=BATCH_SIZE,
         detector_batch_size=DETECTOR_BATCH_SIZE,
@@ -169,7 +200,7 @@ def predict_split(
         customized_detector_checkpoint=customized_detector_checkpoint,
     )
     if detector_runner is None:
-        raise SystemExit(f"no detector built for {DETECTOR_NAME}")
+        raise SystemExit(f"no detector built for {detector_name}")
 
     paths = [str(images_dir / name) for name in image_names]
     print(f"  detecting over {len(paths)} images")
@@ -200,12 +231,18 @@ def keypoint_sigmas(annotations: Path) -> np.ndarray:
     return np.full(len(categories[0]["keypoints"]), OKS_SIGMA)
 
 
-def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]:
+def main(
+    project_dir: Path,
+    dataset_dir: Path | None = None,
+    model_name: str = MODEL_NAME,
+    detector_name: str = DETECTOR_NAME,
+) -> dict[str, float]:
     """Predict and score one project, start to finish inside DeepLabCut.
 
     ``project_dir`` is the run itself for an adapted fit, and a fold's project
-    under ``ZERO_SHOT_DIR`` zero-shot; ``dataset_dir``, given, is the export to
-    score the vendor SuperAnimal weights over without any fitting.
+    under ``zero_shot_dir`` zero-shot; ``dataset_dir``, given, is the export to
+    score the vendor SuperAnimal weights over without any fitting, with the pair
+    ``model_name``/``detector_name``. An adapted fit reads its pair off its config.
     """
     run_dir = project_dir.resolve()
     zero_shot = dataset_dir is not None
@@ -217,10 +254,13 @@ def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]
     # frames set it: a fixed cap either drops animals or invites spurious ones.
     fold_individuals = instances_per_image(run_dir, HELDOUT) if zero_shot else None
     config = (
-        superanimal_config(run_dir, fold_individuals)
+        superanimal_config(run_dir, fold_individuals, model_name, detector_name)
         if zero_shot
         else checkpoints / "pytorch_config.yaml"
     )
+    if not zero_shot:
+        model_name, detector_name = fitted_models(config)
+    print(f"  models            {model_name} + {detector_name}")
     loader = COCOLoader(
         project_root=run_dir,
         model_config=config,
@@ -235,6 +275,8 @@ def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]
     print(f"  {len(paths)} images   max individuals {individuals}")
 
     predictions = predict_split(
+        model_name=model_name,
+        detector_name=detector_name,
         customized_model_config=config,
         customized_detector_checkpoint=(
             None if zero_shot else best_snapshot(checkpoints, detector=True)
@@ -255,20 +297,35 @@ def main(project_dir: Path, dataset_dir: Path | None = None) -> dict[str, float]
     metrics = evaluate(annotations, results, keypoint_sigmas(annotations))
     report_metrics(
         metrics,
-        ZERO_SHOT_DIR if zero_shot else run_dir,
+        zero_shot_dir(model_name, detector_name) if zero_shot else run_dir,
         HELDOUT,
         f"_{fold_key(dataset_dir)}" if zero_shot else "",
     )
     return metrics
 
 
+def flag_value(flag: str, default: str) -> str:
+    """The value of a ``--flag=value`` argument, or ``default`` without one."""
+    values = [a.removeprefix(flag) for a in sys.argv[1:] if a.startswith(flag)]
+    return values[-1] if values else default
+
+
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if a != ZERO_SHOT_FLAG]
+    flags = (ZERO_SHOT_FLAG, MODEL_FLAG, DETECTOR_FLAG)
+    args = [a for a in sys.argv[1:] if not a.startswith(flags)]
+    model_name = flag_value(MODEL_FLAG, MODEL_NAME)
+    detector_name = flag_value(DETECTOR_FLAG, DETECTOR_NAME)
 
     if ZERO_SHOT_FLAG in sys.argv[1:]:
         splits = [split_dir(a) for a in args] or zero_shot_splits()
         scored = {
-            fold_key(split): main(zero_shot_project(split), split) for split in splits
+            fold_key(split): main(
+                zero_shot_project(split, model_name, detector_name),
+                split,
+                model_name,
+                detector_name,
+            )
+            for split in splits
         }
     else:
         runs = [Path(a) for a in args] or dlc_runs()

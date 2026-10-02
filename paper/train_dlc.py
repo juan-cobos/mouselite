@@ -43,6 +43,11 @@ MAX_INDIVIDUALS = 4
 DEVICE: str | None = None  # None -> auto-detected
 
 
+def model_tag(model_name: str, detector_name: str) -> str:
+    """``<pose>_<detector>`` -- what names the outputs of one pair of models."""
+    return f"{model_name}_{detector_name}"
+
+
 def drop_unlabelled_instances(project_root: Path) -> None:
     """Rewrite the project's annotations without the instances DeepLabCut drops."""
     for split in ("train", "test"):
@@ -135,7 +140,7 @@ if __name__ == "__main__":
     dataset = mouse_dataset()
     for i, dataset_dir in enumerate(splits, start=1):
         print(f"\n=== {i}/{len(splits)}  {dataset_dir.name} ===")
-        run_dir = dlc_run_dir(dataset_dir)
+        run_dir = dlc_run_dir(dataset_dir, model_tag(MODEL_NAME, DETECTOR_NAME))
         if (run_dir / "checkpoints" / f"snapshot-{EPOCHS:03d}.pt").exists():
             print(f"  already trained: {run_dir}")
             continue

@@ -170,9 +170,9 @@ def run_dir(dataset_dir: Path) -> Path:
     return RUNS_DIR / f"{RUN_PREFIX}_{dataset_dir.name}"
 
 
-def dlc_run_dir(dataset_dir: Path) -> Path:
-    """The DeepLabCut counterpart to ``run_dir``."""
-    return RUNS_DIR / f"{dataset_dir.name}{DLC_SUFFIX}"
+def dlc_run_dir(dataset_dir: Path, models: str) -> Path:
+    """The DeepLabCut counterpart to ``run_dir``, named by the models it fits too."""
+    return RUNS_DIR / f"{dataset_dir.name}_{models}{DLC_SUFFIX}"
 
 
 def dataset_for_run(output_dir: Path) -> Path:

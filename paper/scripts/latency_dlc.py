@@ -17,11 +17,10 @@ from deeplabcut.pose_estimation_pytorch.modelzoo.inference_helpers import (
 )
 
 from eval_dlc import (
-    DETECTOR_NAME,
-    MODEL_NAME,
     SUPER_ANIMAL,
     best_snapshot,
     dataset_for_run,
+    fitted_models,
 )
 
 SPLIT = "test"
@@ -34,9 +33,7 @@ torch.backends.cudnn.benchmark = torch.cuda.is_available()
 def default_run() -> Path:
     """The first trained DeepLabCut run on disk."""
     runs = sorted(
-        p
-        for p in (ROOT / "runs").glob("*_dlc")
-        if any(p.glob("checkpoints/snapshot-*.pt"))
+        p for p in (ROOT / "runs").glob("*_dlc") if any(p.glob("checkpoints/snapshot-*.pt"))
     )
     if not runs:
         raise SystemExit(f"no trained DeepLabCut run under {ROOT / 'runs'}")
@@ -60,6 +57,7 @@ def load_images(split_dir: Path, annotations: Path) -> list[tuple[np.ndarray, in
 def build_runners(run_dir: Path, compile: bool):
     """The detector and pose runners, both built for one image at a time."""
     checkpoints = run_dir / "checkpoints"
+    model_name, detector_name = fitted_models(checkpoints / "pytorch_config.yaml")
     config = PoseConfig.from_any(checkpoints / "pytorch_config.yaml")
     individuals = config.metadata.individuals
     # One section, read by both runners.
@@ -67,8 +65,8 @@ def build_runners(run_dir: Path, compile: bool):
 
     pose_runner, detector_runner, _ = create_superanimal_inference_runners(
         superanimal_name=SUPER_ANIMAL,
-        model_name=MODEL_NAME,
-        detector_name=DETECTOR_NAME,
+        model_name=model_name,
+        detector_name=detector_name,
         max_individuals=len(individuals),
         batch_size=1,
         detector_batch_size=1,
