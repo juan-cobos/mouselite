@@ -1,11 +1,9 @@
 name: docs
 
-# Manual only until the site is ready to go public. To deploy on every docs change,
-# add back:
-#   push:
-#     branches: [main]
-#     paths: [docs/**, mkdocs.yml, .github/workflows/docs.yml]
 on:
+  push:
+    branches: [main]
+    paths: [docs/**, mkdocs.yml, .github/workflows/docs.yml]
   workflow_dispatch:
 
 permissions:
