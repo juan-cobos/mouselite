@@ -2,6 +2,7 @@
 
 import threading
 from collections.abc import Iterator
+from pathlib import Path
 from types import TracebackType
 
 import cv2
@@ -24,7 +25,7 @@ class LiveStream:
     def __init__(
         self,
         pipeline: Pipeline,
-        source: int | str = 0,
+        source: int | str | Path = 0,
         width: int | None = None,
         height: int | None = None,
         latest: bool = False,
@@ -42,7 +43,9 @@ class LiveStream:
         self._ended = False
 
     def __enter__(self) -> "LiveStream":
-        capture = cv2.VideoCapture(self.source)
+        capture = cv2.VideoCapture(
+            str(self.source) if isinstance(self.source, Path) else self.source
+        )
         if not capture.isOpened():
             capture.release()
             raise RuntimeError(f"could not open video source {self.source!r}")

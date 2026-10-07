@@ -167,7 +167,7 @@ def test_live_stream_yields_processed_frames(tmp_path: Path) -> None:
     make_video(video_path, frames=4)
     pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker(), top_k=1)
 
-    with LiveStream(pipeline, source=str(video_path)) as stream:
+    with LiveStream(pipeline, source=video_path) as stream:
         items = list(stream)
     assert len(items) == 4
     assert all(len(detections) == 1 for _, detections in items)
