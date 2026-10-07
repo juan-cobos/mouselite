@@ -144,3 +144,16 @@ def test_run_feeds_model_rgb(tmp_path: Path) -> None:
     red, _, blue = model.frames[0].reshape(-1, 3).mean(axis=0)
     assert blue > 200
     assert red < 50
+
+
+def test_process_frame_runs_model_every_n_frames() -> None:
+    """Between inference frames, process_frame returns the last detections."""
+    model = RecordingModel()
+    pipeline = Pipeline(model=model, tracker=FakeTracker(), every=2)
+    frame = np.zeros((64, 64, 3), dtype=np.uint8)
+
+    results = [pipeline.process_frame(frame, i) for i in range(4)]
+
+    assert len(model.frames) == 2
+    assert results[1] is results[0]
+    assert results[3] is results[2]

@@ -145,6 +145,38 @@ class Pipeline:
         self.top_k = top_k
         self.every = every
         self.annotator = MetaAnnotator()
+        self.detections = sv.Detections.empty()
+
+    def reset(self) -> None:
+        """Forget the tracks and the last detections, to start a new stream."""
+        self.tracker.reset()
+        self.detections = sv.Detections.empty()
+
+    def process_frame(self, frame: np.ndarray, frame_idx: int) -> sv.Detections:
+        """Detect and track on one BGR `frame`, returning its detections."""
+
+        if frame_idx % self.every == 0:
+            # Video frames are BGR; the models are trained on (and expect) RGB.
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            detections = self.model.predict(rgb, threshold=self.threshold)
+            if isinstance(detections, sv.KeyPoints):
+                detections = _keypoints_to_detections(detections)
+            detections = detections.with_nms(threshold=self.nms_threshold)
+            if self.top_k is not None and len(detections) > self.top_k:
+                top = detections.confidence.argsort()[::-1][: self.top_k]
+                detections = detections[top]
+
+            # No need to run tracking when there's only one target
+            if self.top_k == 1:
+                detections.tracker_id = np.zeros(len(detections), dtype=int)
+            else:
+                detections = self.tracker.update(detections, frame=frame)
+            self.detections = detections
+        return self.detections
+
+    def annotate(self, frame: np.ndarray, detections: sv.Detections) -> np.ndarray:
+        """A copy of `frame` with `detections` drawn on it."""
+        return self.annotator.annotate(frame.copy(), detections)
 
     def run(
         self,
@@ -156,7 +188,7 @@ class Pipeline:
     ) -> Path:
         """Run inference on `video_path`, writing an annotated video, a COCO export, and
         `<stem>_trajectories.csv` / `<stem>_summary.csv`."""
-        self.tracker.reset()
+        self.reset()
         video_path = Path(video_path)
         results_dir = Path(output_dir) / f"{video_path.stem}_results"
         target = results_dir / f"{video_path.stem}_annotated.mp4"
@@ -165,7 +197,6 @@ class Pipeline:
         summary_path = results_dir / f"{video_path.stem}_summary.csv"
         results_dir.mkdir(parents=True, exist_ok=True)
 
-        detections = sv.Detections.empty()
         fps_monitor = sv.FPSMonitor() if hud else None
         video_info = sv.VideoInfo.from_video_path(str(video_path))
         coco = {
@@ -179,27 +210,10 @@ class Pipeline:
             "images": [],
             "annotations": [],
         }
-        next_annotation_id = 1
 
         def callback(frame: np.ndarray, frame_idx: int) -> np.ndarray:
-            nonlocal detections, next_annotation_id
+            detections = self.process_frame(frame, frame_idx)
             if frame_idx % self.every == 0:
-                # Video frames are BGR; the models are trained on (and expect) RGB.
-                rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                detections = self.model.predict(rgb, threshold=self.threshold)
-                if isinstance(detections, sv.KeyPoints):
-                    detections = _keypoints_to_detections(detections)
-                detections = detections.with_nms(threshold=self.nms_threshold)
-                if self.top_k is not None and len(detections) > self.top_k:
-                    top = detections.confidence.argsort()[::-1][: self.top_k]
-                    detections = detections[top]
-
-                # No need to run tracking when there's only one target
-                if self.top_k == 1:
-                    detections.tracker_id = np.zeros(len(detections), dtype=int)
-                else:
-                    detections = self.tracker.update(detections, frame=frame)
-
                 # Frames are not written out: `frame_index` maps each image back to
                 # the source video, which is what `retrack` reads them from.
                 image_id = len(coco["images"]) + 1
@@ -212,14 +226,14 @@ class Pipeline:
                         "frame_index": frame_idx,
                     },
                 )
-                annotations, next_annotation_id = _detections_to_coco(
+                annotations, _ = _detections_to_coco(
                     detections,
                     image_id,
-                    next_annotation_id,
+                    len(coco["annotations"]) + 1,
                 )
                 coco["annotations"].extend(annotations)
 
-            annotated = self.annotator.annotate(frame.copy(), detections)
+            annotated = self.annotate(frame, detections)
 
             if fps_monitor is not None:
                 fps_monitor.tick()
