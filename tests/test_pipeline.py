@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 from typing import ClassVar
 
@@ -157,3 +158,41 @@ def test_process_frame_runs_model_every_n_frames() -> None:
     assert len(model.frames) == 2
     assert results[1] is results[0]
     assert results[3] is results[2]
+
+
+def test_live_stream_yields_processed_frames(tmp_path: Path) -> None:
+    from mouselite.live import LiveStream
+
+    video_path = tmp_path / "live.mp4"
+    make_video(video_path, frames=4)
+    pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker(), top_k=1)
+
+    with LiveStream(pipeline, source=str(video_path)) as stream:
+        items = list(stream)
+    assert len(items) == 4
+    assert all(len(detections) == 1 for _, detections in items)
+    assert stream.capture is None
+
+    with pytest.raises(RuntimeError):
+        LiveStream(pipeline, source=str(tmp_path / "missing.mp4")).__enter__()
+
+
+class SlowModel(FakeKeypointModel):
+    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+        time.sleep(0.05)
+        return super().predict(frame, threshold)
+
+
+def test_live_stream_latest_skips_stale_frames(tmp_path: Path) -> None:
+    """A slow model sees fewer frames than were captured, and the stream still ends."""
+    from mouselite.live import LiveStream
+
+    video_path = tmp_path / "live.mp4"
+    make_video(video_path, frames=30)
+    pipeline = Pipeline(model=SlowModel(), tracker=FakeTracker(), top_k=1)
+
+    with LiveStream(pipeline, source=str(video_path), latest=True) as stream:
+        items = list(stream)
+
+    assert 1 <= len(items) < 30
+    assert stream._thread is None
