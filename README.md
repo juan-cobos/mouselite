@@ -2,6 +2,14 @@
 
 <div align="center"><img src="src/mouselite/assets/logo.svg" alt="MouseLite" width="300"></div>
 
+<div align="center">
+
+[![Paper](https://img.shields.io/badge/Paper-bioRxiv-b31b1b)](https://www.biorxiv.org/content/10.64898/2026.10.02.756254v1)
+[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-MultiTaskMouseBehaviour-ffd21e)](https://huggingface.co/datasets/juancobos/MultiTaskMouseBehaviour)
+[![Zenodo](https://img.shields.io/badge/Zenodo-23035460-1682d4)](https://zenodo.org/records/23035460)
+
+</div>
+
 Real-time mouse detection, segmentation and pose estimation.
 
 MouseLite finds every mouse in a video, keeps its identity from frame to frame, and
@@ -136,12 +144,23 @@ retracked_path = retrack(
 
 The code behind the *released* models — fine-tuning RF-DETR and the DeepLabCut
 SuperAnimal baseline, plus the scripts that scored them — lives in
-[`paper/`](paper/README.md). It is for reproducing the paper.
+[`paper/`](paper/README.md). It is for reproducing [the paper](https://www.biorxiv.org/content/10.64898/2026.10.02.756254v1).
 
 ## Citation
 
-If MouseLite helps your research, please cite the accompanying paper (reference coming
-soon).
+If MouseLite helps your research, please cite [the accompanying paper](https://www.biorxiv.org/content/10.64898/2026.10.02.756254v1):
+
+```bibtex
+@article{Cobos2026.10.02.756254,
+  author    = {Cobos, Juan and Thirard, Steeve and Belkaid, Marwen and Naude, Jeremie},
+  title     = {A promptable foundation model enables automated multi-task dataset construction and real-time pose estimation in mice},
+  journal   = {bioRxiv},
+  year      = {2026},
+  publisher = {Cold Spring Harbor Laboratory},
+  doi       = {10.64898/2026.10.02.756254},
+  URL       = {https://www.biorxiv.org/content/10.64898/2026.10.02.756254v1}
+}
+```
 
 ## Acknowledgements
 
