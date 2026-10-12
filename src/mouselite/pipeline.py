@@ -1,5 +1,6 @@
 """End-to-end video inference pipeline: prediction, tracking and annotation."""
 
+import warnings
 from pathlib import Path
 from typing import Protocol
 
@@ -15,6 +16,10 @@ from supervision.utils.file import save_json_file
 from trackers.core.base import BaseTracker
 
 from mouselite.analysis import Tracks
+
+# We always hand trackers the frame so the ones with camera motion compensation can use
+# it; the rest warn on every video, and the warning breaks the progress bar.
+warnings.filterwarnings("ignore", message=r".*received a frame argument but does not use")
 
 
 class MLModel(Protocol):
