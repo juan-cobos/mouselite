@@ -123,7 +123,9 @@ def train(
         str,
         typer.Option(help="`base` (rfdetr pretrained), `mouselite`, or a checkpoint path."),
     ] = "base",
-    output_dir: Path = Path("output/train"),
+    output_dir: Annotated[
+        Path | None, typer.Option(help="Defaults to output/<timestamp>.")
+    ] = None,
     epochs: int = 10,
     batch_size: int = 4,
     lr: float | None = None,
@@ -144,6 +146,7 @@ def train(
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
         from mouselite.format import convert
+        from mouselite.train import default_output_dir
         from mouselite.train import train as train_model
     except ImportError as exc:  # the train extra (which includes convert) is optional
         typer.echo(
@@ -152,6 +155,7 @@ def train(
         )
         raise typer.Exit(1) from exc
 
+    output_dir = output_dir or default_output_dir()
     if from_format is not None:
         if kind == "segmentation":
             typer.echo(

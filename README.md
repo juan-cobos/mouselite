@@ -102,7 +102,7 @@ mouselite train lp-project/ --kind keypoints --from lightning-pose --epochs 30
 Then run your videos with the new weights:
 
 ```bash
-mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_best_ema.pth
+mouselite run video.mp4 --kind keypoints --checkpoint output/<timestamp>/checkpoint_best_ema.pth
 ```
 
 See [Fine-tuning](https://juan-cobos.github.io/mouselite/training/) for the options and

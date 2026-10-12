@@ -247,13 +247,13 @@ close = analysis.bouts(apart < 4, min_frames=10)                    # contact ep
 
 ## `mouselite.train`
 
-### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir="output/train", epochs=10, batch_size=4, **kwargs) -> None`
+### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, **kwargs) -> None`
 
 What `mouselite train` calls once the dataset is in COCO form. Builds the model with
 `models.build_model(kind, size, weights=weights)` — `weights` is `models.BASE`
 (RF-DETR's pretrained weights), `models.MOUSELITE` (the released weights) or a
 checkpoint path — runs `rfdetr`'s `train` on `dataset_dir`, and writes `metrics.png`
-next to the checkpoints in `output_dir`.
+next to the checkpoints in `output_dir` (default `output/<timestamp>`).
 
 `kwargs` are forwarded to `rfdetr`'s `train` untouched, which is how you reach
 anything the CLI doesn't expose:

@@ -172,7 +172,7 @@ converters); without it the command exits with status 1 and an install hint. See
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--output-dir` | `output/train` | Checkpoints, `metrics.csv`/`metrics.png` and, with `--from`, the `dataset/` folder. |
+| `--output-dir` | `output/<timestamp>` | Checkpoints, `metrics.csv`/`metrics.png` and, with `--from`, the `dataset/` folder. |
 | `--epochs` | `10` | Epochs. For `keypoints`, train for more than 10 so `checkpoint_best_ema.pth` is meaningful (see [Fine-tuning](training.md#what-you-get)). |
 | `--batch-size` | `4` | Lower it on small GPUs. |
 | `--lr` | RF-DETR's | Learning rate. |

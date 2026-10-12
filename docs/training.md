@@ -75,7 +75,7 @@ prints the accepted formats.
 Then run your video with the new weights:
 
 ```bash
-mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_best_ema.pth
+mouselite run video.mp4 --kind keypoints --checkpoint output/<timestamp>/checkpoint_best_ema.pth
 ```
 
 ## Options
@@ -87,7 +87,7 @@ mouselite run video.mp4 --kind keypoints --checkpoint output/train/checkpoint_be
 | `--weights` | `base` | `base`, `mouselite` or a checkpoint path. |
 | `--from FORMAT` | — | Convert `DATASET_DIR` from this format first. See `list-formats`. |
 | `--symlink` / `--no-symlink` | symlink | With `--from`: link or copy the images. |
-| `--output-dir` | `output/train` | Where checkpoints, metrics and the converted dataset go. |
+| `--output-dir` | `output/<timestamp>` | Where checkpoints, metrics and the converted dataset go. |
 | `--epochs` | `10` | Training epochs. |
 | `--batch-size` | `4` | Lower it if you run out of GPU memory. |
 | `--lr` | RF-DETR's | Learning rate. |
