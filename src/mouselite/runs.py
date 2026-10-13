@@ -1,11 +1,8 @@
 """Save training runs' info and checkpoints, and find them again."""
 
-import contextlib
 import json
 import shutil
 from pathlib import Path
-
-from mouselite.models import MODELS
 
 RUN_INFO = "checkpoints.json"
 BEST_CHECKPOINTS = (
@@ -18,40 +15,15 @@ OUTPUT_DIR = Path("output")
 
 
 def write_run_info(run_dir: str | Path, info: dict) -> None:
+    """Save a run's info in its folder."""
     with open(Path(run_dir) / RUN_INFO, "w") as f:
         json.dump(info, f, indent=2, default=str)  # default=str: Paths in kwargs
 
 
 def read_run_info(run_dir: str | Path) -> dict:
-    """The run's info, or an empty dict for runs trained before it was saved."""
+    """Return a run's info, or an empty dict if it has none."""
     path = Path(run_dir) / RUN_INFO
     return json.loads(path.read_text()) if path.exists() else {}
-
-
-def _model_of(checkpoint: Path) -> dict:
-    """The kind and size of the rfdetr model a checkpoint was trained with, if known."""
-    import torch
-
-    try:  # mmap and weights_only: reads the metadata without loading or unpickling weights
-        name = torch.load(checkpoint, map_location="cpu", weights_only=True, mmap=True)
-        name = name.get("model_name")
-    except Exception:
-        return {}
-    for kind, classes in MODELS.items():
-        sizes = classes if isinstance(classes, dict) else {None: classes}
-        for size, cls in sizes.items():
-            if cls == name:
-                return {"kind": kind, "size": size}
-    return {}
-
-
-def _backfill_run_info(run_dir: Path, checkpoint: Path) -> dict:
-    """Write the info of a run trained before it was saved, from its checkpoint."""
-    info = _model_of(checkpoint)
-    if info:  # in a read-only folder, still list the run, just don't save it
-        with contextlib.suppress(OSError):
-            write_run_info(run_dir, info)
-    return info
 
 
 def save_run(run_dir: str | Path, cache_dir: str | Path | None = None) -> Path:
@@ -66,14 +38,14 @@ def save_run(run_dir: str | Path, cache_dir: str | Path | None = None) -> Path:
 
 
 def find_runs(roots: tuple[str | Path, ...] | None = None) -> list[dict]:
-    """The info, folder and best checkpoints of every run found under the given roots."""
+    """Return the info, folder and best checkpoints of every run found."""
     roots = roots if roots is not None else (OUTPUT_DIR, CACHE_DIR)
     run_dirs = dict.fromkeys(  # in order of the roots, sorted within each
         run_dir
         for root in map(Path, roots)
         if root.is_dir()
         for run_dir in sorted(
-            {path.parent for name in BEST_CHECKPOINTS for path in root.rglob(name)}
+            {path.parent for name in BEST_CHECKPOINTS for path in root.rglob(name)},
         )
     )
     runs = []
@@ -81,6 +53,6 @@ def find_runs(roots: tuple[str | Path, ...] | None = None) -> list[dict]:
         checkpoints = [
             run_dir / name for name in BEST_CHECKPOINTS if (run_dir / name).exists()
         ]
-        info = read_run_info(run_dir) or _backfill_run_info(run_dir, checkpoints[0])
+        info = read_run_info(run_dir)
         runs.append({**info, "dir": run_dir, "checkpoints": checkpoints})
     return runs

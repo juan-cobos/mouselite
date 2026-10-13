@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-import torch
 from typer.testing import CliRunner
 
 import mouselite.runs
@@ -46,7 +44,10 @@ def test_find_runs(tmp_path: Path) -> None:
 
 def test_save_run(tmp_path: Path) -> None:
     run_dir = _make_run(
-        tmp_path / "run", "checkpoint_best_ema.pth", "last.ckpt", kind="detection"
+        tmp_path / "run",
+        "checkpoint_best_ema.pth",
+        "last.ckpt",
+        kind="detection",
     )
     target = save_run(run_dir, tmp_path / "cache")
 
@@ -85,24 +86,6 @@ def test_list_runs(tmp_path: Path, monkeypatch) -> None:
         [str(Path("output/k/checkpoint_best_ema.pth")), "keypoints", "-"],
         [str(tmp_path / "cache/b/checkpoint_best_total.pth"), "unknown", "unknown"],
     ]
-
-
-@pytest.mark.parametrize(
-    ("model_name", "info"),
-    [
-        ("RFDETRSegSmall", {"kind": "segmentation", "size": "small"}),
-        ("RFDETRKeypointPreview", {"kind": "keypoints", "size": None}),
-    ],
-)
-def test_find_runs_backfills_old_runs(tmp_path: Path, model_name: str, info: dict) -> None:
-    run_dir = _make_run(tmp_path / "old")
-    torch.save({"model_name": model_name}, run_dir / "checkpoint_best_ema.pth")
-
-    [run] = find_runs((tmp_path,))
-
-    assert run["kind"] == info["kind"]
-    assert run["size"] == info["size"]
-    assert read_run_info(run_dir) == info  # saved, so the next listing is instant
 
 
 def test_find_runs_unreadable_checkpoint(tmp_path: Path) -> None:
