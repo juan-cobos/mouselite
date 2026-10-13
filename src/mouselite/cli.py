@@ -145,7 +145,7 @@ def train(
 ) -> None:
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
-        from mouselite.format import convert
+        from mouselite.format import prepare_dataset
         from mouselite.train import default_output_dir
         from mouselite.train import train as train_model
     except ImportError as exc:  # the train extra (which includes convert) is optional
@@ -156,17 +156,14 @@ def train(
         raise typer.Exit(1) from exc
 
     output_dir = output_dir or default_output_dir()
-    if from_format is not None:
-        if kind == "segmentation":
-            typer.echo(
-                f"--from {from_format} is not supported for --kind segmentation: "
-                "pose formats carry keypoints, not masks.",
-                err=True,
-            )
-            raise typer.Exit(1)
-        dataset_dir = convert(
-            dataset_dir, output_dir / "dataset", from_format, symlink=symlink
+    try:
+        dataset_dir = prepare_dataset(
+            dataset_dir, output_dir, kind, from_format=from_format, symlink=symlink
         )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    if from_format is not None:
         typer.echo(f"converted {from_format} dataset to {dataset_dir}")
 
     extra = {"lr": lr, "resolution": resolution, "device": device}

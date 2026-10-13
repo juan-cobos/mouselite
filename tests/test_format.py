@@ -11,7 +11,7 @@ pd = pytest.importorskip("pandas")
 pytest.importorskip("tables")
 
 from mouselite.cli import app  # noqa: E402
-from mouselite.format import FORMATS, convert  # noqa: E402
+from mouselite.format import FORMATS, convert, prepare_dataset  # noqa: E402
 
 runner = CliRunner()
 
@@ -213,6 +213,24 @@ def test_convert_lightning_pose_multiview(lp_project: Path, tmp_path: Path) -> N
 def test_convert_unknown_format(dlc_project: Path, tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unknown format"):
         convert(dlc_project, tmp_path / "out", "nope")
+
+
+def test_prepare_dataset_passes_coco_through(tmp_path: Path) -> None:
+    assert prepare_dataset(tmp_path / "coco", tmp_path / "run", "keypoints") == (
+        tmp_path / "coco"
+    )
+    assert not (tmp_path / "run").exists()
+
+
+def test_prepare_dataset_converts(dlc_project: Path, tmp_path: Path) -> None:
+    dataset = prepare_dataset(dlc_project, tmp_path / "run", "keypoints", "deeplabcut")
+    assert dataset == tmp_path / "run" / "dataset"
+    assert (dataset / "train" / "_annotations.coco.json").exists()
+
+
+def test_prepare_dataset_rejects_segmentation(dlc_project: Path, tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="not supported"):
+        prepare_dataset(dlc_project, tmp_path / "run", "segmentation", "deeplabcut")
 
 
 def test_list_formats() -> None:

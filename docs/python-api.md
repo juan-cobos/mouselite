@@ -302,3 +302,18 @@ from mouselite.train import train
 dataset = convert("dlc-project/", "output/train/dataset", "deeplabcut")
 train(dataset, "keypoints", output_dir="output/train", epochs=30)
 ```
+
+### `prepare_dataset(dataset_dir, output_dir, kind, from_format=None, symlink=True) -> Path`
+
+The dataset step `mouselite train` runs before `train`. With no `from_format` it
+returns `dataset_dir` untouched (already COCO). Otherwise it `convert`s it to
+`output_dir/dataset` and returns that path. Raises `ValueError` for
+`kind="segmentation"` with a `from_format`, since pose projects have no masks.
+
+```python
+from mouselite.format import prepare_dataset
+from mouselite.train import train
+
+dataset = prepare_dataset("dlc-project/", "output/run", "keypoints", "deeplabcut")
+train(dataset, "keypoints", output_dir="output/run", epochs=30)
+```

@@ -204,3 +204,21 @@ def convert(
             symlink=symlink,
         )
     return output_dir
+
+
+def prepare_dataset(
+    dataset_dir: str | Path,
+    output_dir: str | Path,
+    kind: str,
+    from_format: str | None = None,
+    symlink: bool = True,
+) -> Path:
+    """The dataset to train on, converting the input first if a format is given."""
+    if from_format is None:
+        return Path(dataset_dir)
+    if kind == "segmentation":
+        raise ValueError(
+            f"Converting from {from_format} is not supported for segmentation: "
+            "pose formats carry keypoints, not masks."
+        )
+    return convert(dataset_dir, Path(output_dir) / "dataset", from_format, symlink=symlink)
