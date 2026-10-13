@@ -255,6 +255,15 @@ What `mouselite train` calls once the dataset is in COCO form. Builds the model 
 checkpoint path — runs `rfdetr`'s `train` on `dataset_dir`, and writes `metrics.png`
 next to the checkpoints in `output_dir` (default `output/<timestamp>`).
 
+Before training starts it writes `checkpoints.json` to `output_dir`: the `kind`,
+`size` (`null` for keypoints), `dataset_dir`, `epochs`,
+`batch_size`, the forwarded `train_kwargs`, and a `status` that goes from `running` to
+`finished`, `failed` or `interrupted`, with `started` / `finished` timestamps. It
+records which architecture the checkpoints were trained for, so a run can be loaded
+for inference without knowing that up front. Finished runs are then copied to
+`~/.cache/mouselite/` by `mouselite.runs.save_run`; `mouselite.runs.find_runs()`
+lists the runs there and under `output/`.
+
 `kwargs` are forwarded to `rfdetr`'s `train` untouched, which is how you reach
 anything the CLI doesn't expose:
 

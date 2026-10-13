@@ -3,12 +3,17 @@
 from datetime import datetime
 from pathlib import Path
 
-from mouselite.models import BASE, build_model
+from mouselite.models import BASE, MOUSELITE, build_model
+from mouselite.runs import OUTPUT_DIR, save_run, write_run_info
 
 
 def default_output_dir() -> Path:
     """`output/<timestamp>`, so each run gets its own folder."""
-    return Path("output") / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return OUTPUT_DIR / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def _now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
 
 
 def train(
@@ -30,14 +35,39 @@ def train(
     from rfdetr.visualize import plot_metrics
 
     output_dir = Path(output_dir) if output_dir is not None else default_output_dir()
-    model = build_model(kind, size, weights=weights)
-    model.train(
-        dataset_dir=str(dataset_dir),
-        output_dir=str(output_dir),
-        epochs=epochs,
-        batch_size=batch_size,
-        **kwargs,
-    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    info = {
+        "kind": kind,
+        "size": None if kind == "keypoints" else size,  # keypoints has a single size
+        "weights": weights if weights in (BASE, MOUSELITE) else Path(weights).resolve(),
+        "dataset_dir": Path(dataset_dir).resolve(),
+        "epochs": epochs,
+        "batch_size": batch_size,
+        "train_kwargs": kwargs,
+        "status": "running",
+        "started": _now(),
+        "finished": None,
+    }
+    write_run_info(output_dir, info)
+
+    try:
+        model = build_model(kind, size, weights=weights)
+        model.train(
+            dataset_dir=str(dataset_dir),
+            output_dir=str(output_dir),
+            epochs=epochs,
+            batch_size=batch_size,
+            **kwargs,
+        )
+    except BaseException as exc:
+        info["status"] = "interrupted" if isinstance(exc, KeyboardInterrupt) else "failed"
+        info["finished"] = _now()
+        write_run_info(output_dir, info)
+        raise
+
+    info["status"], info["finished"] = "finished", _now()
+    write_run_info(output_dir, info)
+    save_run(output_dir)
     plot_metrics(
         str(output_dir / "metrics.csv"),
         output_path=str(output_dir / "metrics.png"),

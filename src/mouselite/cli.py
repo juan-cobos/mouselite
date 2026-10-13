@@ -217,6 +217,26 @@ def list_trackers() -> None:
         typer.echo(name)
 
 
+@app.command("list-runs")
+def list_runs() -> None:
+    """Print the best checkpoints of the training runs in output/ and the cache."""
+    from mouselite.runs import find_runs
+
+    rows = [("path", "kind", "size")]
+    for run in find_runs():
+        kind = run.get("kind", "unknown")
+        size = run.get("size") or ("-" if "kind" in run else "unknown")  # keypoints: none
+        rows += [(str(checkpoint), kind, size) for checkpoint in run["checkpoints"]]
+    widths = [max(len(row[i]) for row in rows) for i in range(3)]
+    rows.insert(1, tuple("-" * width for width in widths))
+    for row in rows:
+        typer.echo(
+            " | ".join(
+                cell.ljust(width) for cell, width in zip(row, widths, strict=True)
+            ).rstrip()
+        )
+
+
 @app.command("list-formats")
 def list_formats() -> None:
     r"""Print the dataset formats `train --from` accepts. Needs `mouselite\[convert]`."""

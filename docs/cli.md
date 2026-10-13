@@ -13,6 +13,7 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 | [`list-models`](#list-commands) | print valid `--kind` / `--size` values |
 | [`list-trackers`](#list-commands) | print valid `--tracker` values |
 | [`list-formats`](#list-commands) | print valid `train --from` values |
+| [`list-runs`](#mouselite-list-runs) | print the trained checkpoints in `output/` and the cache |
 
 Every command accepts `--help`. Boolean options follow typer's convention: `--show`
 turns a flag on, `--no-show` turns it off; the `[default: …]` in `--help` shows which
@@ -240,6 +241,29 @@ lightning-pose
 These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
 `mouselite.format.FORMATS`, so anything you register there from Python shows up too.
 `list-formats` needs the `convert` extra, which `train` includes.
+
+## `mouselite list-runs`
+
+Prints the best checkpoints (`checkpoint_best_{total,ema,regular}.pth`) of every
+training run found under `output/` and `~/.cache/mouselite/` (searched recursively),
+one per row with the kind and size from the run's `checkpoints.json`:
+
+```
+$ mouselite list-runs
+path                                                      | kind      | size
+--------------------------------------------------------- | --------- | -------
+output/camille/checkpoint_best_ema.pth                    | keypoints | -
+output/det-small/checkpoint_best_total.pth                | detection | small
+/home/me/.cache/mouselite/camille/checkpoint_best_ema.pth | keypoints | -
+output/old-run/checkpoint_best_ema.pth                    | unknown   | unknown
+```
+
+`train` copies each finished run's `checkpoints.json` and best checkpoints to
+`~/.cache/mouselite/<run name>/`, so they are listed from any working directory.
+For runs trained before `checkpoints.json` existed, the kind and size are read from the
+checkpoint once and saved to a new `checkpoints.json`; checkpoints that can't be read
+show as `unknown`. Pass any listed
+path to `run --checkpoint`.
 
 ## Exit status and errors
 
