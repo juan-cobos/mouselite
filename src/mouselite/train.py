@@ -24,8 +24,10 @@ def train(
     output_dir: str | Path | None = None,
     epochs: int = 10,
     batch_size: int = 4,
+    from_format: str | None = None,
+    symlink: bool = True,
     **kwargs,
-) -> None:
+) -> Path:
     """Train `kind`/`size` starting from `weights` (BASE, MOUSELITE or a checkpoint path).
 
     Extra kwargs are forwarded to `rfdetr`'s `train` (e.g. `lr`, `resolution`, `device`).
@@ -34,13 +36,19 @@ def train(
     """
     from rfdetr.visualize import plot_metrics
 
+    from mouselite.format import prepare_dataset
+
     output_dir = Path(output_dir) if output_dir is not None else default_output_dir()
+    dataset = prepare_dataset(dataset_dir, output_dir, kind, from_format, symlink=symlink)
+    if from_format is not None:
+        print(f"converted {from_format} dataset to {dataset}")
     output_dir.mkdir(parents=True, exist_ok=True)
     info = {
         "kind": kind,
         "size": None if kind == "keypoints" else size,  # keypoints has a single size
         "weights": weights if weights in (BASE, MOUSELITE) else Path(weights).resolve(),
         "dataset_dir": Path(dataset_dir).resolve(),
+        "from_format": from_format,
         "epochs": epochs,
         "batch_size": batch_size,
         "train_kwargs": kwargs,
@@ -53,14 +61,16 @@ def train(
     try:
         model = build_model(kind, size, weights=weights)
         model.train(
-            dataset_dir=str(dataset_dir),
+            dataset_dir=str(dataset),
             output_dir=str(output_dir),
             epochs=epochs,
             batch_size=batch_size,
             **kwargs,
         )
     except BaseException as exc:
-        info["status"] = "interrupted" if isinstance(exc, KeyboardInterrupt) else "failed"
+        # Lightning turns Ctrl-C into sys.exit(1) after shutting down gracefully
+        interrupted = isinstance(exc, KeyboardInterrupt | SystemExit)
+        info["status"] = "interrupted" if interrupted else "failed"
         info["finished"] = _now()
         write_run_info(output_dir, info)
         raise
@@ -72,3 +82,4 @@ def train(
         str(output_dir / "metrics.csv"),
         output_path=str(output_dir / "metrics.png"),
     )
+    return output_dir

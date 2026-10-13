@@ -247,9 +247,11 @@ close = analysis.bouts(apart < 4, min_frames=10)                    # contact ep
 
 ## `mouselite.train`
 
-### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, **kwargs) -> None`
+### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, from_format=None, symlink=True, **kwargs) -> Path`
 
-What `mouselite train` calls once the dataset is in COCO form. Builds the model with
+What `mouselite train` calls, returning `output_dir`. With `from_format`, it first
+converts `dataset_dir` into `output_dir/dataset` with `format.prepare_dataset`. Builds
+the model with
 `models.build_model(kind, size, weights=weights)` — `weights` is `models.BASE`
 (RF-DETR's pretrained weights), `models.MOUSELITE` (the released weights) or a
 checkpoint path — runs `rfdetr`'s `train` on `dataset_dir`, and writes `metrics.png`
@@ -257,10 +259,10 @@ next to the checkpoints in `output_dir` (default `output/<timestamp>`).
 
 Before training starts it writes `checkpoints.json` to `output_dir`: the `kind`,
 `size` (`null` for keypoints), the starting `weights` (`base`, `mouselite` or the
-checkpoint's absolute path), `dataset_dir`, `epochs`, `batch_size`, the forwarded
-`train_kwargs`, and a `status` that goes from `running` to `finished`, `failed` or
-`interrupted`, with `started` / `finished` timestamps. It
-records which architecture the checkpoints were trained for, so a run can be loaded
+checkpoint's absolute path), `dataset_dir`, `from_format`, `epochs`, `batch_size`,
+the forwarded `train_kwargs`, and a `status` that goes from `running` to `finished`,
+`failed` or `interrupted`, with `started` / `finished` timestamps. It records which
+architecture the checkpoints were trained for, so a run can be loaded
 for inference without knowing that up front. Finished runs are then copied to
 `~/.cache/mouselite/` by `mouselite.runs.save_run`; `mouselite.runs.find_runs()`
 lists the runs there and under `output/`.
@@ -282,9 +284,6 @@ train(
     grad_accum_steps=2,
 )
 ```
-
-`train` knows nothing about DeepLabCut or other formats; conversion is a separate
-step, below, that the CLI runs first when given `--from`.
 
 ## `mouselite.format`
 
@@ -315,15 +314,13 @@ train(dataset, "keypoints", output_dir="output/train", epochs=30)
 
 ### `prepare_dataset(dataset_dir, output_dir, kind, from_format=None, symlink=True) -> Path`
 
-The dataset step `mouselite train` runs before `train`. With no `from_format` it
+The dataset step `train` runs first. With no `from_format` it
 returns `dataset_dir` untouched (already COCO). Otherwise it `convert`s it to
 `output_dir/dataset` and returns that path. Raises `ValueError` for
 `kind="segmentation"` with a `from_format`, since pose projects have no masks.
 
 ```python
 from mouselite.format import prepare_dataset
-from mouselite.train import train
 
 dataset = prepare_dataset("dlc-project/", "output/run", "keypoints", "deeplabcut")
-train(dataset, "keypoints", output_dir="output/run", epochs=30)
 ```

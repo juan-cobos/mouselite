@@ -5,7 +5,8 @@ and they should work out of the box on most recordings. When they don't — a to
 camera at an unusual angle, an arena with strong reflections, a coat colour the
 training set lacked, or keypoints you need that the released head doesn't predict —
 the fix is to fine-tune on a few hundred frames of your own footage rather than to
-tune thresholds. `mouselite train` does that from the terminal.
+tune thresholds. `mouselite train` does that from the terminal, and the app's Train tab does it from
+the browser (see [`mouselite app`](cli.md#mouselite-app)).
 
 Training needs the `train` extra, which also brings the format converters:
 

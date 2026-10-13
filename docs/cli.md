@@ -217,6 +217,21 @@ for download, and can `retrack` the same predictions with another tracker (which
 refreshes the downloads). Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.
 
+Its **Model** list holds the released weights and every run `list-runs` finds;
+picking a trained checkpoint sets and locks the kind and size it was trained with. A
+path to a checkpoint elsewhere can be typed in instead.
+
+The **Train** tab fine-tunes a model like `train` does, given a dataset folder and its
+format. It needs the `train` extra as well. A DeepLabCut or Lightning Pose project is
+converted in the app first, so problems with the dataset show up before training
+starts. Training then calls `train` in a separate process,
+writing to `output/<run name>/` plus a `train.log`, so the Inference tab stays usable
+meanwhile
+(on the same GPU). The tab plots the loss and validation mAP per epoch and shows the
+end of the log. **Stop** interrupts the run, and **Use for inference** selects the
+finished run's best checkpoint. One run trains at a time, and it is stopped when the
+app exits.
+
 ## `mouselite list-models`, `list-trackers` and `list-formats` { #list-commands }
 
 ```
@@ -244,9 +259,9 @@ These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
 
 ## `mouselite list-runs`
 
-Prints the best checkpoints (`checkpoint_best_{total,ema,regular}.pth`) of every
-training run found under `output/` and `~/.cache/mouselite/` (searched recursively),
-one per row with the kind and size from the run's `checkpoints.json`:
+Prints the best checkpoint of every training run found under `output/` and
+`~/.cache/mouselite/` (searched recursively), one run per row with the kind and size
+from the run's `checkpoints.json`:
 
 ```
 $ mouselite list-runs
@@ -255,15 +270,13 @@ path                                                      | kind      | size
 output/camille/checkpoint_best_ema.pth                    | keypoints | -
 output/det-small/checkpoint_best_total.pth                | detection | small
 /home/me/.cache/mouselite/camille/checkpoint_best_ema.pth | keypoints | -
-output/old-run/checkpoint_best_ema.pth                    | unknown   | unknown
+output/old-run/checkpoint_best_regular.pth                | unknown   | unknown
 ```
 
 `train` copies each finished run's `checkpoints.json` and best checkpoints to
 `~/.cache/mouselite/<run name>/`, so they are listed from any working directory.
-For runs trained before `checkpoints.json` existed, the kind and size are read from the
-checkpoint once and saved to a new `checkpoints.json`; checkpoints that can't be read
-show as `unknown`. Pass any listed
-path to `run --checkpoint`.
+Runs without a `checkpoints.json` (trained before it existed) show as `unknown`.
+Pass any listed path to `run --checkpoint`.
 
 ## Exit status and errors
 

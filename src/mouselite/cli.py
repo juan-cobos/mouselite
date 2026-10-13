@@ -145,8 +145,6 @@ def train(
 ) -> None:
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
-        from mouselite.format import prepare_dataset
-        from mouselite.train import default_output_dir
         from mouselite.train import train as train_model
     except ImportError as exc:  # the train extra (which includes convert) is optional
         typer.echo(
@@ -155,28 +153,23 @@ def train(
         )
         raise typer.Exit(1) from exc
 
-    output_dir = output_dir or default_output_dir()
+    extra = {"lr": lr, "resolution": resolution, "device": device}
     try:
-        dataset_dir = prepare_dataset(
-            dataset_dir, output_dir, kind, from_format=from_format, symlink=symlink
+        output_dir = train_model(
+            dataset_dir,
+            kind,
+            size=size,
+            weights=weights,
+            output_dir=output_dir,
+            epochs=epochs,
+            batch_size=batch_size,
+            from_format=from_format,
+            symlink=symlink,
+            **{k: v for k, v in extra.items() if v is not None},
         )
-    except ValueError as exc:
+    except ValueError as exc:  # e.g. a format that can't be converted for this kind
         typer.echo(str(exc), err=True)
         raise typer.Exit(1) from exc
-    if from_format is not None:
-        typer.echo(f"converted {from_format} dataset to {dataset_dir}")
-
-    extra = {"lr": lr, "resolution": resolution, "device": device}
-    train_model(
-        dataset_dir,
-        kind,
-        size=size,
-        weights=weights,
-        output_dir=output_dir,
-        epochs=epochs,
-        batch_size=batch_size,
-        **{k: v for k, v in extra.items() if v is not None},
-    )
     typer.echo(f"wrote checkpoints and metrics.png to {output_dir}")
 
 
@@ -219,14 +212,14 @@ def list_trackers() -> None:
 
 @app.command("list-runs")
 def list_runs() -> None:
-    """Print the best checkpoints of the training runs in output/ and the cache."""
+    """Print the best checkpoint of each training run in output/ and the cache."""
     from mouselite.runs import find_runs
 
     rows = [("path", "kind", "size")]
     for run in find_runs():
         kind = run.get("kind", "unknown")
         size = run.get("size") or ("-" if "kind" in run else "unknown")  # keypoints: none
-        rows += [(str(checkpoint), kind, size) for checkpoint in run["checkpoints"]]
+        rows.append((str(run["checkpoint"]), kind, size))
     widths = [max(len(row[i]) for row in rows) for i in range(3)]
     rows.insert(1, tuple("-" * width for width in widths))
     for row in rows:

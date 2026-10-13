@@ -34,12 +34,9 @@ def test_find_runs(tmp_path: Path) -> None:
     runs = find_runs((tmp_path / "output", tmp_path / "missing"))
 
     assert [run["dir"] for run in runs] == [old, new]
-    assert runs[0] == {"dir": old, "checkpoints": [old / "checkpoint_best_regular.pth"]}
+    assert runs[0] == {"dir": old, "checkpoint": old / "checkpoint_best_regular.pth"}
     assert runs[1]["kind"] == "keypoints"
-    assert runs[1]["checkpoints"] == [
-        new / "checkpoint_best_total.pth",
-        new / "checkpoint_best_ema.pth",
-    ]
+    assert runs[1]["checkpoint"] == new / "checkpoint_best_total.pth"  # preferred
 
 
 def test_save_run(tmp_path: Path) -> None:
@@ -88,8 +85,8 @@ def test_list_runs(tmp_path: Path, monkeypatch) -> None:
     ]
 
 
-def test_find_runs_unreadable_checkpoint(tmp_path: Path) -> None:
-    run_dir = _make_run(tmp_path / "old", "checkpoint_best_ema.pth")  # not a torch file
+def test_find_runs_without_info(tmp_path: Path) -> None:
+    run_dir = _make_run(tmp_path / "old", "checkpoint_best_ema.pth")
 
     [run] = find_runs((tmp_path,))
 

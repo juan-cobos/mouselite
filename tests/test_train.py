@@ -38,12 +38,17 @@ def _patch(monkeypatch, model: FakeModel) -> None:
 def test_train_writes_run_info(tmp_path: Path, monkeypatch, cache_dir: Path) -> None:
     _patch(monkeypatch, FakeModel())
     output_dir = tmp_path / "run"
-    train(tmp_path / "data", "detection", size="small", output_dir=output_dir, lr=1e-4)
+    returned = train(
+        tmp_path / "data", "detection", size="small", output_dir=output_dir, lr=1e-4
+    )
+
+    assert returned == output_dir
 
     info = json.loads((output_dir / RUN_INFO).read_text())
     assert info["kind"] == "detection"
     assert info["size"] == "small"
     assert info["dataset_dir"] == str((tmp_path / "data").resolve())
+    assert info["from_format"] is None
     assert info["train_kwargs"] == {"lr": 1e-4}
     assert info["status"] == "finished"
     assert info["finished"] is not None
@@ -67,7 +72,11 @@ def test_train_saves_finished_run_to_cache(
 
 @pytest.mark.parametrize(
     ("error", "status"),
-    [(RuntimeError("CUDA out of memory"), "failed"), (KeyboardInterrupt(), "interrupted")],
+    [
+        (RuntimeError("CUDA out of memory"), "failed"),
+        (KeyboardInterrupt(), "interrupted"),
+        (SystemExit(1), "interrupted"),  # how Lightning exits after a Ctrl-C
+    ],
 )
 def test_train_run_info_on_error(
     tmp_path: Path, monkeypatch, cache_dir: Path, error: BaseException, status: str

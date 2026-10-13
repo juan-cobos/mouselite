@@ -5,7 +5,7 @@ import shutil
 from pathlib import Path
 
 RUN_INFO = "checkpoints.json"
-BEST_CHECKPOINTS = (
+BEST_CHECKPOINTS = (  # in order of preference
     "checkpoint_best_total.pth",
     "checkpoint_best_ema.pth",
     "checkpoint_best_regular.pth",
@@ -38,7 +38,7 @@ def save_run(run_dir: str | Path, cache_dir: str | Path | None = None) -> Path:
 
 
 def find_runs(roots: tuple[str | Path, ...] | None = None) -> list[dict]:
-    """Return the info, folder and best checkpoints of every run found."""
+    """Return the info, folder and best checkpoint of every run found."""
     roots = roots if roots is not None else (OUTPUT_DIR, CACHE_DIR)
     run_dirs = dict.fromkeys(  # in order of the roots, sorted within each
         run_dir
@@ -50,9 +50,9 @@ def find_runs(roots: tuple[str | Path, ...] | None = None) -> list[dict]:
     )
     runs = []
     for run_dir in run_dirs:
-        checkpoints = [
+        checkpoint = next(
             run_dir / name for name in BEST_CHECKPOINTS if (run_dir / name).exists()
-        ]
+        )
         info = read_run_info(run_dir)
-        runs.append({**info, "dir": run_dir, "checkpoints": checkpoints})
+        runs.append({**info, "dir": run_dir, "checkpoint": checkpoint})
     return runs
