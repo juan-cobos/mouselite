@@ -236,14 +236,14 @@ def train_model(
     """Prepare the dataset here, then train in a separate process."""
     if _training():
         gr.Warning("A model is already training; stop it first.")
-        return gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update()
     if not dataset_dir or not Path(dataset_dir).exists():
         gr.Warning("Point the dataset field at an existing folder.")
-        return gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update()
     output_dir = OUTPUT_DIR / run_name.strip() if run_name.strip() else default_output_dir()
     if output_dir.exists() and any(output_dir.iterdir()):
         gr.Warning(f"{output_dir} already exists; pick another run name.")
-        return gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update()
 
     progress(0, desc="Preparing the dataset...")
     from_format = None if dataset_format == COCO else dataset_format
@@ -251,7 +251,7 @@ def train_model(
         dataset = prepare_dataset(dataset_dir, output_dir, kind, from_format=from_format)
     except (ValueError, FileNotFoundError, AssertionError, KeyError) as exc:
         gr.Warning(f"Could not read the dataset: {exc}")
-        return gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update()
     missing = [
         split
         for split in ("train", "valid")
@@ -259,7 +259,7 @@ def train_model(
     ]
     if missing:
         gr.Warning(f"No {' or '.join(missing)}/_annotations.coco.json in {dataset}.")
-        return gr.update(), gr.update()
+        return gr.update(), gr.update(), gr.update()
 
     output_dir.mkdir(parents=True, exist_ok=True)
     kwargs = {
@@ -276,7 +276,7 @@ def train_model(
     process = context.Process(target=train_logged, args=(str(output_dir / LOG), kwargs))
     process.start()
     _job.update(process=process, output_dir=output_dir, epochs=int(epochs))
-    return _banner(), gr.Timer(active=True)
+    return _banner(), gr.Timer(active=True), gr.update(interactive=True)
 
 
 _tensorboard: dict = {}  # the app's TensorBoard process, started on demand
@@ -371,7 +371,7 @@ def _banner():
 def poll_training():
     """Timer tick: refresh the banner, curves and log, and wrap up a finished run."""
     if not _job:
-        return (gr.update(),) * 5 + (gr.Timer(active=False), gr.update(), gr.update())
+        return (gr.update(),) * 5 + (gr.Timer(active=False),) + (gr.update(),) * 3
     per_epoch = _per_epoch(_job["output_dir"])
     updates = (
         _banner(),
@@ -380,7 +380,7 @@ def poll_training():
         _log_tail(_job["output_dir"] / LOG),
     )
     if _training():
-        return (*updates, gr.update(), gr.Timer(active=True), gr.update(), gr.update())
+        return (*updates, gr.update(), gr.Timer(active=True)) + (gr.update(),) * 3
     finished = read_run_info(_job["output_dir"]).get("status") == "finished"
     return (
         *updates,
@@ -388,6 +388,7 @@ def poll_training():
         gr.Timer(active=False),
         gr.update(choices=_checkpoint_choices(*INFERENCE_WEIGHTS)),
         gr.update(choices=_checkpoint_choices(*TRAIN_WEIGHTS)),
+        gr.update(interactive=False),  # stop
     )
 
 
@@ -404,6 +405,7 @@ def _on_load():
         gr.update(choices=_checkpoint_choices(*TRAIN_WEIGHTS)),
         _banner(),
         gr.Timer(active=bool(_job)),
+        gr.update(interactive=_training()),  # stop
     )
 
 
@@ -571,7 +573,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                         variant="primary",
                         size="lg",
                     )
-                    stop_btn = gr.Button("Stop", size="lg")
+                    stop_btn = gr.Button("Stop", size="lg", interactive=False)
                     use_btn = gr.Button("Use for inference", size="lg", visible=False)
                     tensorboard_btn = gr.Button("Open TensorBoard", size="lg")
                 with gr.Row():
@@ -581,7 +583,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                     map_plot = gr.LinePlot(
                         x="epoch", y="value", color="metric", label="Validation mAP 50:95"
                     )
-                log_box = gr.HTML()
+                log_box = gr.HTML(label="Logs", show_label=True, container=True)
 
         gr.HTML(
             '<div style="text-align:center;padding:10px 0;'
@@ -650,7 +652,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                 epochs,
                 batch_size,
             ],
-            outputs=[banner, timer],
+            outputs=[banner, timer, stop_btn],
         )
         stop_btn.click(stop_training, outputs=banner)
         timer.tick(
@@ -664,6 +666,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                 timer,
                 checkpoint,
                 train_weights,
+                stop_btn,
             ],
         )
         use_btn.click(use_trained_model, outputs=[checkpoint, tabs])
@@ -674,7 +677,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
             start_tensorboard,
             js=f"() => {{ open(`http://${{location.hostname}}:{tensorboard_port}`); }}",
         )
-        demo.load(_on_load, outputs=[checkpoint, train_weights, banner, timer])
+        demo.load(_on_load, outputs=[checkpoint, train_weights, banner, timer, stop_btn])
     return demo
 
 
