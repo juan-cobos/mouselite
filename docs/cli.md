@@ -229,9 +229,11 @@ starts. Training then calls `train` in a separate process,
 writing to `output/<run name>/` plus a `train.log`, so the Inference tab stays usable
 meanwhile
 (on the same GPU). The tab plots the loss and validation mAP per epoch and shows the
-end of the log. **Stop** interrupts the run, and **Use for inference** selects the
-finished run's best checkpoint. One run trains at a time, and it is stopped when the
-app exits.
+end of the log, coloured as in a terminal. **Stop** interrupts the run, and **Use for
+inference** selects the finished run's best checkpoint. **Open TensorBoard** opens
+TensorBoard on every run in `output/`, with all the metrics rfdetr logs; it runs on
+localhost, so open the app from the same machine to use it. One run trains at a time,
+and it and TensorBoard are stopped when the app exits.
 
 ## `mouselite list-models`, `list-trackers` and `list-formats` { #list-commands }
 

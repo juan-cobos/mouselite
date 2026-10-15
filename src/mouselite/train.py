@@ -90,6 +90,7 @@ def train(
 def train_logged(log_path: str, kwargs: dict) -> None:
     """Train in a session of its own, printing to the log; the app's process target."""
     os.setsid()  # its own process group, so it can be stopped along with its workers
+    os.environ.setdefault("COLUMNS", "120")  # rich's width when not printing to a terminal
     with open(log_path, "w") as log:
         for stream in (sys.stdout, sys.stderr):
             os.dup2(log.fileno(), stream.fileno())

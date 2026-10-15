@@ -5,18 +5,25 @@ Install the extra and run with:
 """
 
 import atexit
+import io
 import multiprocessing
 import os
 import re
 import signal
+import socket
+import subprocess
+import sys
 import tempfile
-from functools import lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
 
 import gradio as gr
 import pandas as pd
 import supervision as sv
 from huggingface_hub import snapshot_download
+from rich.console import Console
+from rich.terminal_theme import MONOKAI
+from rich.text import Text
 
 from mouselite.format import FORMATS, prepare_dataset
 from mouselite.models import BASE, MODELS, MOUSELITE, get_model
@@ -43,6 +50,14 @@ COCO = "coco"  # the dataset format rfdetr trains on, needing no conversion
 INFERENCE_WEIGHTS = (("MouseLite (released)", MOUSELITE),)
 TRAIN_WEIGHTS = (("RF-DETR pretrained", BASE), ("MouseLite (released)", MOUSELITE))
 LOG = "train.log"  # the training process's output, next to its checkpoints
+# A terminal-like block for rich's HTML; line-height 1.2 keeps the tables' box lines
+# joined, and the inline <code> style overrides Gradio's code colours.
+LOG_HTML = (
+    '<pre style="margin:0;padding:12px;border-radius:6px;font-size:12px;line-height:1.2;'
+    "color:{foreground};background:{background};overflow-x:auto;"
+    "font-family:Menlo,'DejaVu Sans Mono',consolas,monospace\">"
+    '<code style="color:inherit;background:none;font:inherit">{code}</code></pre>'
+)
 
 
 def _header_html(height: int = LOGO_HEIGHT) -> str:
@@ -264,6 +279,33 @@ def train_model(
     return _banner(), gr.Timer(active=True)
 
 
+_tensorboard: dict = {}  # the app's TensorBoard process, started on demand
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _start_tensorboard(port: int) -> None:
+    """Serve TensorBoard on the training runs, once per app."""
+    if _tensorboard and _tensorboard["process"].poll() is None:
+        return
+    command = [sys.executable, "-m", "tensorboard.main", "--logdir", str(OUTPUT_DIR)]
+    _tensorboard["process"] = subprocess.Popen(
+        [*command, "--port", str(port)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+@atexit.register
+def _stop_tensorboard() -> None:
+    if _tensorboard:
+        _tensorboard["process"].terminate()
+
+
 def stop_training():
     _stop_training()
     return gr.update(value="Stopping training...", visible=True)
@@ -288,17 +330,19 @@ def _plot_data(per_epoch: pd.DataFrame | None, pattern: str) -> pd.DataFrame | N
     return data if len(data) else None  # an empty frame stops the plot drawing later rows
 
 
-def _log_tail(path: Path, lines: int = 25) -> str:
-    """The end of the training log, uncoloured, keeping progress bars' last state."""
+def _log_tail(path: Path, lines: int = 30) -> str:
+    """The end of the training log as HTML, coloured as in a terminal."""
     try:
         with open(path, "rb") as f:
-            f.seek(max(0, f.seek(0, os.SEEK_END) - 32_000))
+            f.seek(max(0, f.seek(0, os.SEEK_END) - 64_000))
             text = f.read().decode(errors="replace")
     except FileNotFoundError:
         return ""
-    text = re.sub(r"\x1b\[[0-9;]*m", "", text)  # rich's colours
+    # \r redraws a progress bar in place: keep each one's last state
     rows = [row.rsplit("\r", 1)[-1] for row in text.split("\n")]
-    return "\n".join([row for row in rows if row.strip()][-lines:])
+    console = Console(record=True, file=io.StringIO())
+    console.print(Text.from_ansi("\n".join(rows[-lines:])), soft_wrap=True)
+    return console.export_html(theme=MONOKAI, inline_styles=True, code_format=LOG_HTML)
 
 
 def _banner():
@@ -473,7 +517,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                             info="Run inference on 1 of every N frames.",
                         )
 
-            with gr.Tab("Train", id="train"):
+            with gr.Tab("Train", id="train") as train_tab:
                 with gr.Row():
                     with gr.Column():
                         dataset_dir = gr.Textbox(
@@ -529,6 +573,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                     )
                     stop_btn = gr.Button("Stop", size="lg")
                     use_btn = gr.Button("Use for inference", size="lg", visible=False)
+                    tensorboard_btn = gr.Button("Open TensorBoard", size="lg")
                 with gr.Row():
                     loss_plot = gr.LinePlot(
                         x="epoch", y="value", color="metric", label="Loss"
@@ -536,7 +581,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                     map_plot = gr.LinePlot(
                         x="epoch", y="value", color="metric", label="Validation mAP 50:95"
                     )
-                log_box = gr.Textbox(label="Log", lines=12, max_lines=12, autoscroll=True)
+                log_box = gr.HTML()
 
         gr.HTML(
             '<div style="text-align:center;padding:10px 0;'
@@ -622,6 +667,13 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
             ],
         )
         use_btn.click(use_trained_model, outputs=[checkpoint, tabs])
+        tensorboard_port = _free_port()
+        start_tensorboard = partial(_start_tensorboard, tensorboard_port)
+        train_tab.select(start_tensorboard)  # so it's up by the time it's opened
+        tensorboard_btn.click(
+            start_tensorboard,
+            js=f"() => {{ open(`http://${{location.hostname}}:{tensorboard_port}`); }}",
+        )
         demo.load(_on_load, outputs=[checkpoint, train_weights, banner, timer])
     return demo
 
