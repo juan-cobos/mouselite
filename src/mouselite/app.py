@@ -284,7 +284,8 @@ def _plot_data(per_epoch: pd.DataFrame | None, pattern: str) -> pd.DataFrame | N
         return None
     columns = [c for c in per_epoch.columns if re.fullmatch(pattern, c)]
     data = per_epoch[columns].reset_index().melt(id_vars="epoch", var_name="metric")
-    return data.dropna()
+    data = data.dropna()
+    return data if len(data) else None  # an empty frame stops the plot drawing later rows
 
 
 def _log_tail(path: Path, lines: int = 25) -> str:
