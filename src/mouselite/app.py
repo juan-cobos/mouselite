@@ -355,10 +355,7 @@ def _banner():
         done = 0  # epochs validated so far
         if per_epoch is not None:
             done = int(per_epoch.filter(like="val/").notna().any(axis=1).sum())
-        text = (
-            f"Training **{name}**: epoch {done}/{_job['epochs']}. "
-            "Inference shares the GPU meanwhile."
-        )
+        text = f"Training **{name}**: epoch {done}/{_job['epochs']}. "
     else:
         status = read_run_info(_job["output_dir"]).get("status", "failed")
         text = {
