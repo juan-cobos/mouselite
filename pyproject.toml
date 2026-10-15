@@ -23,6 +23,7 @@ dependencies = [
 [project.optional-dependencies]
 app = [
     "gradio>=6.0.0",
+    "mouselite[train]",
 ]
 convert = [
     "tables>=3.9.0",

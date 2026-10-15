@@ -202,7 +202,8 @@ mouselite train dataset/ --kind detection --size small --weights mouselite --epo
 mouselite app [--share/--no-share] [--host HOST] [--port PORT]
 ```
 
-Serves the Gradio demo. Requires the `app` extra (`pip install "mouselite[app]"`);
+Serves the Gradio demo. Requires the `app` extra (`pip install "mouselite[app]"`),
+which includes the `train` extra;
 without it the command exits with status 1 and an install hint.
 
 | Option | Default | Meaning |
@@ -222,7 +223,7 @@ picking a trained checkpoint sets and locks the kind and size it was trained wit
 path to a checkpoint elsewhere can be typed in instead.
 
 The **Train** tab fine-tunes a model like `train` does, given a dataset folder and its
-format. It needs the `train` extra as well. A DeepLabCut or Lightning Pose project is
+format. A DeepLabCut or Lightning Pose project is
 converted in the app first, so problems with the dataset show up before training
 starts. Training then calls `train` in a separate process,
 writing to `output/<run name>/` plus a `train.log`, so the Inference tab stays usable

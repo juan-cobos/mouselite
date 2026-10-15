@@ -2239,6 +2239,8 @@ dependencies = [
 [package.optional-dependencies]
 app = [
     { name = "gradio" },
+    { name = "rfdetr", extra = ["loggers", "train", "visual"] },
+    { name = "tables" },
 ]
 convert = [
     { name = "tables" },
@@ -2260,6 +2262,7 @@ requires-dist = [
     { name = "gradio", marker = "extra == 'app'", specifier = ">=6.0.0" },
     { name = "huggingface-hub", specifier = ">=1.27.0" },
     { name = "mouselite", extras = ["convert"], marker = "extra == 'train'" },
+    { name = "mouselite", extras = ["train"], marker = "extra == 'app'" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "rfdetr", specifier = ">=1.9.2" },

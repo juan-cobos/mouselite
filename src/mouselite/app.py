@@ -5,7 +5,6 @@ Install the extra and run with:
 """
 
 import atexit
-import importlib.util
 import multiprocessing
 import os
 import re
@@ -19,17 +18,12 @@ import pandas as pd
 import supervision as sv
 from huggingface_hub import snapshot_download
 
+from mouselite.format import FORMATS, prepare_dataset
 from mouselite.models import BASE, MODELS, MOUSELITE, get_model
 from mouselite.pipeline import Pipeline
 from mouselite.runs import CACHE_DIR, OUTPUT_DIR, find_runs, read_run_info
 from mouselite.tracker import TRACKERS, get_tracker, retrack
 from mouselite.train import default_output_dir, train_logged
-
-try:  # the train extra brings the converters and rfdetr's trainer
-    from mouselite.format import FORMATS, prepare_dataset
-except ImportError:
-    FORMATS, prepare_dataset = {}, None
-CAN_TRAIN = prepare_dataset is not None and importlib.util.find_spec("pytorch_lightning")
 
 ASSETS = Path(__file__).parent / "assets"
 LOGO, ICON = ASSETS / "logo.svg", ASSETS / "icon.svg"
@@ -479,11 +473,6 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                         )
 
             with gr.Tab("Train", id="train"):
-                if not CAN_TRAIN:
-                    gr.Markdown(
-                        "Training needs the extra: install with "
-                        "`pip install mouselite[train]`."
-                    )
                 with gr.Row():
                     with gr.Column():
                         dataset_dir = gr.Textbox(
@@ -536,9 +525,8 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                         "Start training",
                         variant="primary",
                         size="lg",
-                        interactive=CAN_TRAIN,
                     )
-                    stop_btn = gr.Button("Stop", size="lg", interactive=CAN_TRAIN)
+                    stop_btn = gr.Button("Stop", size="lg")
                     use_btn = gr.Button("Use for inference", size="lg", visible=False)
                 with gr.Row():
                     loss_plot = gr.LinePlot(

@@ -33,7 +33,7 @@ every step.
 
 ```bash
 pip install mouselite                    # or: uv add mouselite
-pip install "mouselite[app]"             # with the Gradio demo
+pip install "mouselite[app]"             # with the Gradio demo (includes train)
 pip install "mouselite[train]"           # to fine-tune on your own data
 ```
 
