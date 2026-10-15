@@ -1,5 +1,7 @@
 """Fine-tune an rfdetr model on a COCO dataset. Needs `pip install mouselite[train]`."""
 
+import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -83,3 +85,13 @@ def train(
         output_path=str(output_dir / "metrics.png"),
     )
     return output_dir
+
+
+def train_logged(log_path: str, kwargs: dict) -> None:
+    """Train in a session of its own, printing to the log; the app's process target."""
+    os.setsid()  # its own process group, so it can be stopped along with its workers
+    with open(log_path, "w") as log:
+        for stream in (sys.stdout, sys.stderr):
+            os.dup2(log.fileno(), stream.fileno())
+            stream.reconfigure(line_buffering=True)
+        train(**kwargs)

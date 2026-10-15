@@ -10,7 +10,6 @@ import multiprocessing
 import os
 import re
 import signal
-import sys
 import tempfile
 from functools import lru_cache
 from pathlib import Path
@@ -24,7 +23,7 @@ from mouselite.models import BASE, MODELS, MOUSELITE, get_model
 from mouselite.pipeline import Pipeline
 from mouselite.runs import CACHE_DIR, OUTPUT_DIR, find_runs, read_run_info
 from mouselite.tracker import TRACKERS, get_tracker, retrack
-from mouselite.train import default_output_dir, train
+from mouselite.train import default_output_dir, train_logged
 
 try:  # the train extra brings the converters and rfdetr's trainer
     from mouselite.format import FORMATS, prepare_dataset
@@ -214,16 +213,6 @@ def _stop_training() -> None:
 atexit.register(_stop_training)  # don't leave a trainer holding the GPU after the app
 
 
-def _train_logged(log_path: str, kwargs: dict) -> None:
-    """Process target: train in a session of its own, printing to the log."""
-    os.setsid()  # its own process group, so it can be stopped along with its workers
-    with open(log_path, "w") as log:
-        for stream in (sys.stdout, sys.stderr):
-            os.dup2(log.fileno(), stream.fileno())
-            stream.reconfigure(line_buffering=True)
-        train(**kwargs)
-
-
 def train_model(
     dataset_dir,
     dataset_format,
@@ -275,7 +264,7 @@ def train_model(
     }
     # spawn, not fork: this process may hold CUDA state and runs Gradio's threads
     context = multiprocessing.get_context("spawn")
-    process = context.Process(target=_train_logged, args=(str(output_dir / LOG), kwargs))
+    process = context.Process(target=train_logged, args=(str(output_dir / LOG), kwargs))
     process.start()
     _job.update(process=process, output_dir=output_dir, epochs=int(epochs))
     return _banner(), gr.Timer(active=True)
