@@ -50,13 +50,15 @@ COCO = "coco"  # the dataset format rfdetr trains on, needing no conversion
 INFERENCE_WEIGHTS = (("MouseLite (released)", MOUSELITE),)
 TRAIN_WEIGHTS = (("RF-DETR pretrained", BASE), ("MouseLite (released)", MOUSELITE))
 LOG = "train.log"  # the training process's output, next to its checkpoints
-# A terminal-like block for rich's HTML; line-height 1.2 keeps the tables' box lines
-# joined, and the inline <code> style overrides Gradio's code colours.
+# A terminal-like block for rich's HTML: column-reverse opens it scrolled to the end,
+# line-height 1.2 keeps the tables' box lines joined, and the inline <code> style
+# overrides Gradio's code colours.
 LOG_HTML = (
-    '<pre style="margin:0;padding:12px;border-radius:6px;font-size:12px;line-height:1.2;'
-    "color:{foreground};background:{background};overflow-x:auto;"
+    '<div style="display:flex;flex-direction:column-reverse;max-height:480px;'
+    'overflow:auto;border-radius:6px;background:{background}">'
+    '<pre style="margin:0;padding:12px;font-size:12px;line-height:1.2;color:{foreground};'
     "font-family:Menlo,'DejaVu Sans Mono',consolas,monospace\">"
-    '<code style="color:inherit;background:none;font:inherit">{code}</code></pre>'
+    '<code style="color:inherit;background:none;font:inherit">{code}</code></pre></div>'
 )
 
 
@@ -330,18 +332,16 @@ def _plot_data(per_epoch: pd.DataFrame | None, pattern: str) -> pd.DataFrame | N
     return data if len(data) else None  # an empty frame stops the plot drawing later rows
 
 
-def _log_tail(path: Path, lines: int = 30) -> str:
-    """The end of the training log as HTML, coloured as in a terminal."""
+def _log_html(path: Path) -> str:
+    """The training log as HTML, coloured as in a terminal."""
     try:
-        with open(path, "rb") as f:
-            f.seek(max(0, f.seek(0, os.SEEK_END) - 64_000))
-            text = f.read().decode(errors="replace")
+        text = path.read_bytes().decode(errors="replace")
     except FileNotFoundError:
         return ""
     # \r redraws a progress bar in place: keep each one's last state
     rows = [row.rsplit("\r", 1)[-1] for row in text.split("\n")]
     console = Console(record=True, file=io.StringIO())
-    console.print(Text.from_ansi("\n".join(rows[-lines:])), soft_wrap=True)
+    console.print(Text.from_ansi("\n".join(rows)), soft_wrap=True)
     return console.export_html(theme=MONOKAI, inline_styles=True, code_format=LOG_HTML)
 
 
@@ -365,19 +365,30 @@ def _banner():
     return gr.update(value=text, visible=True)
 
 
-def poll_training():
+def _log_size(path: Path) -> int | None:
+    try:
+        return path.stat().st_size
+    except FileNotFoundError:
+        return None
+
+
+def poll_training(shown_log_size=None):
     """Timer tick: refresh the banner, curves and log, and wrap up a finished run."""
     if not _job:
-        return (gr.update(),) * 5 + (gr.Timer(active=False),) + (gr.update(),) * 3
+        return (gr.update(),) * 5 + (gr.Timer(active=False),) + (gr.update(),) * 4
     per_epoch = _per_epoch(_job["output_dir"])
+    log_path = _job["output_dir"] / LOG
+    log_size = _log_size(log_path)
     updates = (
         _banner(),
         _plot_data(per_epoch, r"(train|val)/loss"),
         _plot_data(per_epoch, r"val/(ema_)?(keypoint_)?(map|mAP)_50_95"),
-        _log_tail(_job["output_dir"] / LOG),
+        # Skip reading, rendering and sending the log until it grows
+        gr.update() if log_size == shown_log_size else _log_html(log_path),
     )
     if _training():
-        return (*updates, gr.update(), gr.Timer(active=True)) + (gr.update(),) * 3
+        no_change = (gr.update(),) * 3
+        return (*updates, gr.update(), gr.Timer(active=True), *no_change, log_size)
     finished = read_run_info(_job["output_dir"]).get("status") == "finished"
     return (
         *updates,
@@ -386,6 +397,7 @@ def poll_training():
         gr.update(choices=_checkpoint_choices(*INFERENCE_WEIGHTS)),
         gr.update(choices=_checkpoint_choices(*TRAIN_WEIGHTS)),
         gr.update(interactive=False),  # stop
+        log_size,
     )
 
 
@@ -412,6 +424,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
         gr.HTML(_header_html(), padding=False, container=False)
         banner = gr.Markdown(visible=False)
         timer = gr.Timer(3, active=False)
+        shown_log_size = gr.State()  # of the log this page shows, to redraw it on change
 
         with gr.Tabs() as tabs:
             with gr.Tab("Inference", id="inference"):
@@ -654,6 +667,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
         stop_btn.click(stop_training, outputs=banner)
         timer.tick(
             poll_training,
+            inputs=shown_log_size,
             outputs=[
                 banner,
                 loss_plot,
@@ -664,6 +678,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                 checkpoint,
                 train_weights,
                 stop_btn,
+                shown_log_size,
             ],
         )
         use_btn.click(use_trained_model, outputs=[checkpoint, tabs])
