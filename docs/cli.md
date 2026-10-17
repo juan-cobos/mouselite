@@ -13,6 +13,7 @@ mouselite [OPTIONS] COMMAND [ARGS]...
 | [`list-models`](#list-commands) | print valid `--kind` / `--size` values |
 | [`list-trackers`](#list-commands) | print valid `--tracker` values |
 | [`list-formats`](#list-commands) | print valid `train --from` values |
+| [`list-runs`](#mouselite-list-runs) | print the trained checkpoints in `output/` and the cache |
 
 Every command accepts `--help`. Boolean options follow typer's convention: `--show`
 turns a flag on, `--no-show` turns it off; the `[default: …]` in `--help` shows which
@@ -33,14 +34,14 @@ and writes, per video:
 ```
 <output-dir>/
 └── <stem>_results/
-    ├── <stem>_annotated.mp4
+    ├── <stem>_annotated.mp4      (not with --no-video)
     ├── <stem>_annotations.json
     ├── <stem>_trajectories.csv
     └── <stem>_summary.csv
 ```
 
-where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
-each video on success. `<stem>_annotations.json` is a COCO detection/keypoint file, with the
+where `<stem>` is the video's file name without extension. Prints `wrote <path>` with
+each video's results folder on success. `<stem>_annotations.json` is a COCO detection/keypoint file, with the
 frame index, a confidence `score` and track id per annotation, and the video's frame rate added.
 `<stem>_trajectories.csv` is the same data as a long table with one row per frame and track
 (box centre, box, area and keypoints); `<stem>_summary.csv` has one row per track (frames
@@ -84,6 +85,7 @@ Applied in this order, on every inference frame:
 | ------ | ------- | ------- |
 | `--every N` | `1` | Run inference on 1 of every `N` frames; the frames in between are annotated with the last predictions. Only inference frames are exported. |
 | `--output-dir` | `output` | Directory for the video and the export. Created if missing. |
+| `--video` / `--no-video` | on | Write the annotated video. `--no-video` keeps only the export and tables, and skips drawing the frames. The video is the bulk of the disk space, so turn it off for large batches. |
 | `--show` / `--no-show` | off | Open a window and preview each annotated frame as it is produced. Needs a display. |
 | `--hud` / `--no-hud` | off | Burn a live `FPS: …` counter (of the pipeline, not the video) into the top-left of the output. |
 | `--show-progress` / `--no-show-progress` | on | Progress bar on stderr. |
@@ -201,7 +203,8 @@ mouselite train dataset/ --kind detection --size small --weights mouselite --epo
 mouselite app [--share/--no-share] [--host HOST] [--port PORT]
 ```
 
-Serves the Gradio demo. Requires the `app` extra (`pip install "mouselite[app]"`);
+Serves the Gradio demo. Requires the `app` extra (`pip install "mouselite[app]"`),
+which includes the `train` extra;
 without it the command exits with status 1 and an install hint.
 
 | Option | Default | Meaning |
@@ -215,6 +218,23 @@ into a temp directory, offers `<stem>_annotations.json`, `<stem>_trajectories.cs
 for download, and can `retrack` the same predictions with another tracker (which
 refreshes the downloads). Models are cached in memory (two at a
 time) so switching back and forth does not reload weights.
+
+Its **Model** list holds the released weights and every run `list-runs` finds;
+picking a trained checkpoint sets and locks the kind and size it was trained with. A
+path to a checkpoint elsewhere can be typed in instead.
+
+The **Train** tab fine-tunes a model like `train` does, given a dataset folder and its
+format, and the epochs, batch size and learning rate (RF-DETR's `1e-4` by default). A DeepLabCut or Lightning Pose project is
+converted in the app first, so problems with the dataset show up before training
+starts. Training then calls `train` in a separate process,
+writing to `output/<run name>/` plus a `train.log`, so the Inference tab stays usable
+meanwhile
+(on the same GPU). The tab plots the loss and validation mAP per epoch and shows the
+end of the log, coloured as in a terminal. **Stop** interrupts the run, and **Use for
+inference** selects the finished run's best checkpoint. **Open TensorBoard** opens
+TensorBoard on every run in `output/`, with all the metrics rfdetr logs; it runs on
+localhost, so open the app from the same machine to use it. One run trains at a time,
+and it and TensorBoard are stopped when the app exits.
 
 ## `mouselite list-models`, `list-trackers` and `list-formats` { #list-commands }
 
@@ -240,6 +260,27 @@ lightning-pose
 These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
 `mouselite.format.FORMATS`, so anything you register there from Python shows up too.
 `list-formats` needs the `convert` extra, which `train` includes.
+
+## `mouselite list-runs`
+
+Prints the best checkpoint of every training run found under `output/` and
+`~/.cache/mouselite/` (searched recursively), one run per row with the kind and size
+from the run's `checkpoints.json`:
+
+```
+$ mouselite list-runs
+path                                                      | kind      | size
+--------------------------------------------------------- | --------- | -------
+output/camille/checkpoint_best_ema.pth                    | keypoints | -
+output/det-small/checkpoint_best_total.pth                | detection | small
+/home/me/.cache/mouselite/camille/checkpoint_best_ema.pth | keypoints | -
+output/old-run/checkpoint_best_regular.pth                | unknown   | unknown
+```
+
+`train` copies each finished run's `checkpoints.json` and best checkpoints to
+`~/.cache/mouselite/<run name>/`, so they are listed from any working directory.
+Runs without a `checkpoints.json` (trained before it existed) show as `unknown`.
+Pass any listed path to `run --checkpoint`.
 
 ## Exit status and errors
 

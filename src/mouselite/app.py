@@ -1,21 +1,36 @@
-"""Gradio demo wrapping the mouselite Pipeline.
+"""Gradio demo wrapping the mouselite Pipeline, and fine-tuning in its own process.
 
 Install the extra and run with:
     uv run --extra app mouselite app
 """
 
+import atexit
+import io
+import multiprocessing
+import os
 import re
+import signal
+import socket
+import subprocess
+import sys
 import tempfile
-from functools import lru_cache
+from functools import lru_cache, partial
 from pathlib import Path
 
 import gradio as gr
+import pandas as pd
 import supervision as sv
 from huggingface_hub import snapshot_download
+from rich.console import Console
+from rich.terminal_theme import MONOKAI
+from rich.text import Text
 
-from mouselite.models import MODELS, get_model
+from mouselite.format import FORMATS, prepare_dataset
+from mouselite.models import BASE, MODELS, MOUSELITE, get_model
 from mouselite.pipeline import Pipeline
+from mouselite.runs import CACHE_DIR, OUTPUT_DIR, find_runs, read_run_info
 from mouselite.tracker import TRACKERS, get_tracker, retrack
+from mouselite.train import default_output_dir, train_logged
 
 ASSETS = Path(__file__).parent / "assets"
 LOGO, ICON = ASSETS / "logo.svg", ASSETS / "icon.svg"
@@ -31,6 +46,20 @@ KINDS = list(MODELS)
 SIZES = list(MODELS["detection"])
 EXPORTS = ("annotations.json", "trajectories.csv", "summary.csv")  # each <stem>_-prefixed
 EXAMPLES_REPO = "juancobos/MultiTaskMouseBehaviour"  # one 10 s clip per behavioural task
+COCO = "coco"  # the dataset format rfdetr trains on, needing no conversion
+INFERENCE_WEIGHTS = (("MouseLite (released)", MOUSELITE),)
+TRAIN_WEIGHTS = (("RF-DETR pretrained", BASE), ("MouseLite (released)", MOUSELITE))
+LOG = "train.log"  # the training process's output, next to its checkpoints
+# A terminal-like block for rich's HTML: column-reverse opens it scrolled to the end,
+# line-height 1.2 keeps the tables' box lines joined, and the inline <code> style
+# overrides Gradio's code colours.
+LOG_HTML = (
+    '<div style="display:flex;flex-direction:column-reverse;max-height:480px;'
+    'overflow:auto;border-radius:6px;background:{background}">'
+    '<pre style="margin:0;padding:12px;font-size:12px;line-height:1.2;color:{foreground};'
+    "font-family:Menlo,'DejaVu Sans Mono',consolas,monospace\">"
+    '<code style="color:inherit;background:none;font:inherit">{code}</code></pre></div>'
+)
 
 
 def _header_html(height: int = LOGO_HEIGHT) -> str:
@@ -48,9 +77,9 @@ def _header_html(height: int = LOGO_HEIGHT) -> str:
 
 
 @lru_cache(maxsize=2)
-def _load_model(kind: str, size: str):
+def _load_model(kind: str, size: str, checkpoint: str):
     """Cache weights so repeated runs don't re-download and re-init the model."""
-    return get_model(kind, size=size)
+    return get_model(kind, size=size, checkpoint=checkpoint)
 
 
 def _example_videos() -> list[Path]:
@@ -76,8 +105,46 @@ def _exports(results_dir: str | Path, video_path: str | Path):
     return gr.update(value=files, visible=True)
 
 
+def _checkpoint_choices() -> list[dict]:
+    """Inference and train dropdown choices: the fixed ones, then every run found."""
+    runs = []
+    for run in find_runs():
+        model = " ".join(filter(None, (run.get("kind"), run.get("size")))) or "unknown"
+        cached = " · cached" if run["dir"].is_relative_to(CACHE_DIR) else ""
+        label = f"{run['dir'].name} · {model}{cached}"
+        runs.append((label, str(run["checkpoint"])))
+    fixed_choices = (INFERENCE_WEIGHTS, TRAIN_WEIGHTS)
+    return [gr.update(choices=[*fixed, *runs]) for fixed in fixed_choices]
+
+
+def _checkpoint_info(choice: str | None) -> dict:
+    """The run info of a chosen checkpoint; empty for released weights or unknown runs."""
+    if not choice or choice in (BASE, MOUSELITE):
+        return {}
+    return read_run_info(Path(choice).parent)
+
+
+def _toggle_size(kind, choice):
+    """Keypoints ships a single checkpoint, and a trained checkpoint fixes its size."""
+    return gr.update(
+        interactive=kind != "keypoints" and "kind" not in _checkpoint_info(choice)
+    )
+
+
+def _lock_model(choice, kind):
+    """Set kind and size from a trained checkpoint, which fixes its architecture."""
+    info = _checkpoint_info(choice)
+    kind = info.get("kind", kind)
+    size = {"value": info["size"]} if info.get("size") else {}
+    return (
+        gr.update(value=kind, interactive="kind" not in info),
+        gr.update(**size, interactive=kind != "keypoints" and "kind" not in info),
+    )
+
+
 def run_inference(
     video_path,
+    checkpoint,
     kind,
     model_size,
     tracker_type,
@@ -93,7 +160,7 @@ def run_inference(
         return None, gr.update(visible=False), None
 
     progress(0, desc=f"Loading {kind} model...")
-    model = _load_model(kind, model_size)
+    model = _load_model(kind, model_size, checkpoint or MOUSELITE)
 
     fps = sv.VideoInfo.from_video_path(str(video_path)).fps
     tracker = get_tracker(tracker_type, frame_rate=fps)
@@ -135,134 +202,506 @@ def run_retrack(
     return str(target), _exports(state["results_dir"], state["video_path"])
 
 
-def _toggle_size(kind):
-    """Keypoints ships a single checkpoint, so size does not apply to it."""
-    return gr.update(interactive=kind != "keypoints")
+# The one training process the app drives, shared by every browser tab since they share
+# the GPU: its Process, output_dir and epochs.
+_job: dict = {}
 
 
-EXAMPLE_VIDEOS = _example_videos()
+def _training() -> bool:
+    return bool(_job) and _job["process"].is_alive()
 
-with gr.Blocks(title="MouseLite") as demo:
-    gr.HTML(_header_html(), padding=False, container=False)
 
-    last_run = gr.State()
+def _stop_training() -> None:
+    """Interrupt the training process group, so train() records it as interrupted."""
+    if _training():
+        try:
+            os.killpg(_job["process"].pid, signal.SIGINT)
+        except ProcessLookupError:  # not yet in its own process group
+            os.kill(_job["process"].pid, signal.SIGINT)
 
-    with gr.Row():
-        video_in = gr.Video(
-            sources=["upload"],
-            label="Upload a video",
-            height=420,
+
+atexit.register(_stop_training)  # don't leave a trainer holding the GPU after the app
+
+
+def train_model(
+    dataset_dir,
+    dataset_format,
+    kind,
+    size,
+    weights,
+    run_name,
+    epochs,
+    batch_size,
+    lr,
+    progress=gr.Progress(),  # noqa: B008 — Gradio injects via this default
+):
+    """Prepare the dataset here, then train in a separate process."""
+    if _training():
+        gr.Warning("A model is already training; stop it first.")
+        return gr.update(), gr.update(), gr.update()
+    if not dataset_dir or not Path(dataset_dir).exists():
+        gr.Warning("Point the dataset field at an existing folder.")
+        return gr.update(), gr.update(), gr.update()
+    output_dir = OUTPUT_DIR / run_name.strip() if run_name.strip() else default_output_dir()
+    if output_dir.exists() and any(output_dir.iterdir()):
+        gr.Warning(f"{output_dir} already exists; pick another run name.")
+        return gr.update(), gr.update(), gr.update()
+
+    progress(0, desc="Preparing the dataset...")
+    from_format = None if dataset_format == COCO else dataset_format
+    try:
+        dataset = prepare_dataset(dataset_dir, output_dir, kind, from_format=from_format)
+    except (ValueError, FileNotFoundError, AssertionError, KeyError) as exc:
+        gr.Warning(f"Could not read the dataset: {exc}")
+        return gr.update(), gr.update(), gr.update()
+    missing = [
+        split
+        for split in ("train", "valid")
+        if not (dataset / split / "_annotations.coco.json").exists()
+    ]
+    if missing:
+        gr.Warning(f"No {' or '.join(missing)}/_annotations.coco.json in {dataset}.")
+        return gr.update(), gr.update(), gr.update()
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    kwargs = {
+        "dataset_dir": dataset,  # already converted
+        "kind": kind,
+        "size": size,
+        "weights": weights,
+        "output_dir": output_dir,
+        "epochs": int(epochs),
+        "batch_size": int(batch_size),
+        "lr": float(lr),
+    }
+    # spawn, not fork: this process may hold CUDA state and runs Gradio's threads
+    context = multiprocessing.get_context("spawn")
+    process = context.Process(target=train_logged, args=(str(output_dir / LOG), kwargs))
+    process.start()
+    _job.update(process=process, output_dir=output_dir, epochs=int(epochs))
+    return _banner(), gr.Timer(active=True), gr.update(interactive=True)
+
+
+_tensorboard: dict = {}  # the app's TensorBoard process, started on demand
+
+
+def _free_port() -> int:
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _start_tensorboard(port: int) -> None:
+    """Serve TensorBoard on the training runs, once per app."""
+    if _tensorboard and _tensorboard["process"].poll() is None:
+        return
+    command = [sys.executable, "-m", "tensorboard.main", "--logdir", str(OUTPUT_DIR)]
+    _tensorboard["process"] = subprocess.Popen(
+        [*command, "--port", str(port)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+@atexit.register
+def _stop_tensorboard() -> None:
+    if _tensorboard:
+        _tensorboard["process"].terminate()
+
+
+def stop_training():
+    _stop_training()
+    return gr.update(value="Stopping training...", visible=True)
+
+
+def _per_epoch(output_dir: Path) -> pd.DataFrame | None:
+    """The run's metrics, one row per epoch; None until the first ones are logged."""
+    try:
+        metrics = pd.read_csv(output_dir / "metrics.csv")
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        return None
+    return metrics.groupby("epoch").last()  # last logged value of each metric
+
+
+def _plot_data(per_epoch: pd.DataFrame | None, pattern: str) -> pd.DataFrame | None:
+    """Long-form `epoch, metric, value` rows of the columns matching `pattern`."""
+    if per_epoch is None:
+        return None
+    columns = [c for c in per_epoch.columns if re.fullmatch(pattern, c)]
+    data = per_epoch[columns].reset_index().melt(id_vars="epoch", var_name="metric")
+    data = data.dropna()
+    return data if len(data) else None  # an empty frame stops the plot drawing later rows
+
+
+def _log_html(path: Path) -> str:
+    """The training log as HTML, coloured as in a terminal."""
+    try:
+        text = path.read_bytes().decode(errors="replace")
+    except FileNotFoundError:
+        return ""
+    # \r redraws a progress bar in place: keep each one's last state
+    rows = [row.rsplit("\r", 1)[-1] for row in text.split("\n")]
+    console = Console(record=True, file=io.StringIO())
+    console.print(Text.from_ansi("\n".join(rows)), soft_wrap=True)
+    return console.export_html(theme=MONOKAI, inline_styles=True, code_format=LOG_HTML)
+
+
+def _banner():
+    """The training status shown above both tabs."""
+    if not _job:
+        return gr.update(visible=False)
+    name = _job["output_dir"].name
+    if _training():
+        per_epoch = _per_epoch(_job["output_dir"])
+        done = 0  # epochs validated so far
+        if per_epoch is not None:
+            done = int(per_epoch.filter(like="val/").notna().any(axis=1).sum())
+        text = f"Training **{name}**: epoch {done}/{_job['epochs']}. "
+    else:
+        status = read_run_info(_job["output_dir"]).get("status", "failed")
+        text = {
+            "finished": f"Training **{name}** finished; pick it in the Model list.",
+            "interrupted": f"Training **{name}** was stopped.",
+        }.get(status, f"Training **{name}** failed; see the log in the Train tab.")
+    return gr.update(value=text, visible=True)
+
+
+def _log_size(path: Path) -> int | None:
+    try:
+        return path.stat().st_size
+    except FileNotFoundError:
+        return None
+
+
+def poll_training(shown_log_size=None):
+    """Timer tick: refresh the banner, curves and log, and wrap up a finished run."""
+    if not _job:
+        return (gr.update(),) * 5 + (gr.Timer(active=False),) + (gr.update(),) * 4
+    per_epoch = _per_epoch(_job["output_dir"])
+    log_path = _job["output_dir"] / LOG
+    log_size = _log_size(log_path)
+    updates = (
+        _banner(),
+        _plot_data(per_epoch, r"(train|val)/loss"),
+        _plot_data(per_epoch, r"val/(ema_)?(keypoint_)?(map|mAP)_50_95"),
+        # Skip reading, rendering and sending the log until it grows
+        gr.update() if log_size == shown_log_size else _log_html(log_path),
+    )
+    if _training():
+        no_change = (gr.update(),) * 3
+        return (*updates, gr.update(), gr.Timer(active=True), *no_change, log_size)
+    finished = read_run_info(_job["output_dir"]).get("status") == "finished"
+    return (
+        *updates,
+        gr.update(visible=finished),
+        gr.Timer(active=False),
+        *_checkpoint_choices(),
+        gr.update(interactive=False),  # stop
+        log_size,
+    )
+
+
+def use_trained_model():
+    """Select the last run's best checkpoint for inference and switch to that tab."""
+    [run] = find_runs((_job["output_dir"],))
+    return gr.update(value=str(run["checkpoint"])), gr.Tabs(selected="inference")
+
+
+def _on_load():
+    """Fresh checkpoint lists, and reattach to a run started before a page reload."""
+    return (
+        *_checkpoint_choices(),
+        _banner(),
+        gr.Timer(active=bool(_job)),
+        gr.update(interactive=_training()),  # stop
+    )
+
+
+def build_demo(example_videos: list[Path]) -> gr.Blocks:
+    """Build the demo's interface."""
+    with gr.Blocks(title="MouseLite") as demo:
+        gr.HTML(_header_html(), padding=False, container=False)
+        banner = gr.Markdown(visible=False)
+        timer = gr.Timer(3, active=False)
+        shown_log_size = gr.State()  # of the log this page shows, to redraw it on change
+
+        with gr.Tabs() as tabs:
+            with gr.Tab("Inference", id="inference"):
+                last_run = gr.State()
+
+                with gr.Row():
+                    video_in = gr.Video(
+                        sources=["upload"],
+                        label="Upload a video",
+                        height=420,
+                    )
+                    video_out = gr.Video(
+                        label="Annotated output", interactive=False, height=420
+                    )
+
+                if example_videos:
+                    with gr.Accordion("Examples", open=True):
+                        examples = gr.Examples(
+                            [[str(video)] for video in example_videos],
+                            inputs=video_in,
+                        )
+                        examples.dataset.show_label = (
+                            False  # the accordion carries the title
+                        )
+
+                with gr.Row():
+                    run_btn = gr.Button("Run", variant="primary", size="lg")
+                    retrack_btn = gr.Button("Retrack", size="lg")
+                exports_out = gr.File(
+                    label="Results",
+                    file_count="multiple",
+                    interactive=False,
+                    visible=False,
+                )
+
+                with gr.Accordion("Configuration", open=True), gr.Row():
+                    with gr.Column():
+                        with gr.Row(equal_height=True):
+                            checkpoint = gr.Dropdown(
+                                choices=list(INFERENCE_WEIGHTS),
+                                value=MOUSELITE,
+                                label="Model",
+                                info="The released weights, or a checkpoint you trained. "
+                                "Paste a path to use one from elsewhere.",
+                                allow_custom_value=True,
+                                scale=5,
+                            )
+                            refresh_btn = gr.Button("Refresh", size="sm", scale=1)
+                        kind = gr.Dropdown(
+                            choices=KINDS,
+                            value="keypoints",
+                            label="Kind",
+                            info="Which model to run: pose, detection or segmentation.",
+                        )
+                        model_size = gr.Dropdown(
+                            choices=SIZES,
+                            value="medium",
+                            label="Size",
+                            info="Larger models are more accurate but slower. "
+                            "Not used by keypoints.",
+                            interactive=False,
+                        )
+                        tracker_type = gr.Dropdown(
+                            choices=list(TRACKERS),
+                            value="bytetrack",
+                            label="Tracker",
+                            info="Multi-object tracking algorithm.",
+                        )
+
+                    with gr.Column():
+                        threshold = gr.Slider(
+                            minimum=0.05,
+                            maximum=1.0,
+                            step=0.05,
+                            value=0.5,
+                            label="Threshold",
+                            info="Minimum confidence for a prediction to be kept.",
+                        )
+                        nms_threshold = gr.Slider(
+                            minimum=0.05,
+                            maximum=1.0,
+                            step=0.05,
+                            value=0.5,
+                            label="NMS threshold",
+                            info="Drop the lower-scoring of two predictions overlapping "
+                            "above this.",
+                        )
+                        top_k = gr.Slider(
+                            minimum=1,
+                            maximum=10,
+                            step=1,
+                            value=2,
+                            label="Max animals",
+                            info="Keep only the highest-scoring predictions per frame.",
+                        )
+                        every = gr.Slider(
+                            minimum=1,
+                            maximum=10,
+                            step=1,
+                            value=1,
+                            label="Inference stride",
+                            info="Run inference on 1 of every N frames.",
+                        )
+
+            with gr.Tab("Train", id="train") as train_tab:
+                with gr.Row(equal_height=True):
+                    dataset_dir = gr.Textbox(
+                        label="Dataset",
+                        placeholder="/path/to/dataset",
+                        info="A COCO dataset (train/ and valid/ folders), or a "
+                        "DeepLabCut / Lightning Pose project.",
+                    )
+                    train_weights = gr.Dropdown(
+                        choices=list(TRAIN_WEIGHTS),
+                        value=MOUSELITE,
+                        label="Start from",
+                        info="Released weights are usually the best start for mice; "
+                        "or continue from a checkpoint you trained.",
+                        allow_custom_value=True,
+                    )
+                    epochs = gr.Slider(
+                        minimum=1, maximum=200, step=1, value=30, label="Epochs"
+                    )
+                with gr.Row(equal_height=True):
+                    dataset_format = gr.Dropdown(
+                        choices=[COCO, *FORMATS],
+                        value=COCO,
+                        label="Format",
+                        info="Projects in other formats are converted into the run folder.",
+                    )
+                    train_kind = gr.Dropdown(
+                        choices=KINDS,
+                        value="keypoints",
+                        label="Kind",
+                        info="Which model to train: pose, detection or segmentation.",
+                    )
+                    batch_size = gr.Slider(
+                        minimum=1,
+                        maximum=32,
+                        step=1,
+                        value=4,
+                        label="Batch size",
+                    )
+                with gr.Row(equal_height=True):
+                    run_name = gr.Textbox(
+                        label="Run name",
+                        placeholder="defaults to the date and time",
+                        info=f"Checkpoints are written to {OUTPUT_DIR}/<run name>.",
+                    )
+                    train_size = gr.Dropdown(
+                        choices=SIZES,
+                        value="medium",
+                        label="Size",
+                        info="Larger models are more accurate but slower.",
+                        interactive=False,
+                    )
+                    lr = gr.Slider(
+                        minimum=5e-5,
+                        maximum=5e-4,
+                        step=5e-5,
+                        value=1e-4,
+                        label="Learning rate",
+                    )
+                with gr.Row():
+                    start_btn = gr.Button(
+                        "Start training",
+                        variant="primary",
+                        size="lg",
+                    )
+                    stop_btn = gr.Button("Stop", size="lg", interactive=False)
+                    use_btn = gr.Button("Use for inference", size="lg", visible=False)
+                    tensorboard_btn = gr.Button("Open TensorBoard", size="lg")
+                with gr.Row():
+                    loss_plot = gr.LinePlot(
+                        x="epoch", y="value", color="metric", label="Loss"
+                    )
+                    map_plot = gr.LinePlot(
+                        x="epoch", y="value", color="metric", label="Validation mAP 50:95"
+                    )
+                log_box = gr.HTML(label="Logs", show_label=True, container=True)
+
+        gr.HTML(
+            '<div style="text-align:center;padding:10px 0;'
+            "border-top:1px solid var(--border-color-primary);"
+            'color:var(--body-text-color-subdued)">'
+            f'<a href="{REPO}" target="_blank" rel="noopener" style="color:inherit">'
+            "MouseLite on GitHub</a></div>",
+            padding=False,
+            container=False,
         )
-        video_out = gr.Video(label="Annotated output", interactive=False, height=420)
 
-    if EXAMPLE_VIDEOS:
-        with gr.Accordion("Examples", open=True):
-            examples = gr.Examples(
-                [[str(video)] for video in EXAMPLE_VIDEOS],
-                inputs=video_in,
-            )
-            examples.dataset.show_label = False  # the accordion carries the title
+        kind.change(_toggle_size, inputs=[kind, checkpoint], outputs=model_size)
+        checkpoint.change(
+            _lock_model, inputs=[checkpoint, kind], outputs=[kind, model_size]
+        )
+        refresh_btn.click(
+            lambda: _checkpoint_choices()[0],
+            outputs=checkpoint,
+        )
 
-    with gr.Row():
-        run_btn = gr.Button("Run", variant="primary", size="lg")
-        retrack_btn = gr.Button("Retrack", size="lg")
-    exports_out = gr.File(
-        label="Results",
-        file_count="multiple",
-        interactive=False,
-        visible=False,
-    )
+        run_btn.click(
+            lambda: gr.update(visible=False),
+            outputs=exports_out,
+        ).then(
+            run_inference,
+            inputs=[
+                video_in,
+                checkpoint,
+                kind,
+                model_size,
+                tracker_type,
+                threshold,
+                nms_threshold,
+                top_k,
+                every,
+            ],
+            outputs=[video_out, exports_out, last_run],
+        )
 
-    with gr.Accordion("Configuration", open=True), gr.Row():
-        with gr.Column():
-            kind = gr.Dropdown(
-                choices=KINDS,
-                value="keypoints",
-                label="Kind",
-                info="Which model to run: pose, detection or segmentation.",
-            )
-            model_size = gr.Dropdown(
-                choices=SIZES,
-                value="medium",
-                label="Size",
-                info="Larger models are more accurate but slower. Not used by keypoints.",
-                interactive=False,
-            )
-            tracker_type = gr.Dropdown(
-                choices=list(TRACKERS),
-                value="bytetrack",
-                label="Tracker",
-                info="Multi-object tracking algorithm.",
-            )
+        retrack_btn.click(
+            run_retrack,
+            inputs=[last_run, tracker_type],
+            outputs=[video_out, exports_out],
+        )
 
-        with gr.Column():
-            threshold = gr.Slider(
-                minimum=0.05,
-                maximum=1.0,
-                step=0.05,
-                value=0.5,
-                label="Threshold",
-                info="Minimum confidence for a prediction to be kept.",
-            )
-            nms_threshold = gr.Slider(
-                minimum=0.05,
-                maximum=1.0,
-                step=0.05,
-                value=0.5,
-                label="NMS threshold",
-                info="Drop the lower-scoring of two predictions overlapping above this.",
-            )
-            top_k = gr.Slider(
-                minimum=1,
-                maximum=10,
-                step=1,
-                value=2,
-                label="Max animals",
-                info="Keep only the highest-scoring predictions per frame.",
-            )
-            every = gr.Slider(
-                minimum=1,
-                maximum=10,
-                step=1,
-                value=1,
-                label="Inference stride",
-                info="Run inference on 1 of every N frames.",
-            )
-    gr.HTML(
-        '<div style="text-align:center;padding:10px 0;'
-        "border-top:1px solid var(--border-color-primary);"
-        'color:var(--body-text-color-subdued)">'
-        f'<a href="{REPO}" target="_blank" rel="noopener" style="color:inherit">'
-        "MouseLite on GitHub</a></div>",
-        padding=False,
-        container=False,
-    )
-
-    kind.change(_toggle_size, inputs=kind, outputs=model_size)
-
-    run_btn.click(
-        lambda: gr.update(visible=False),
-        outputs=exports_out,
-    ).then(
-        run_inference,
-        inputs=[
-            video_in,
-            kind,
-            model_size,
-            tracker_type,
-            threshold,
-            nms_threshold,
-            top_k,
-            every,
-        ],
-        outputs=[video_out, exports_out, last_run],
-    )
-
-    retrack_btn.click(
-        run_retrack,
-        inputs=[last_run, tracker_type],
-        outputs=[video_out, exports_out],
-    )
+        train_kind.change(
+            _toggle_size, inputs=[train_kind, train_weights], outputs=train_size
+        )
+        train_weights.change(
+            _lock_model,
+            inputs=[train_weights, train_kind],
+            outputs=[train_kind, train_size],
+        )
+        start_btn.click(
+            lambda: gr.update(visible=False),
+            outputs=use_btn,
+        ).then(
+            train_model,
+            inputs=[
+                dataset_dir,
+                dataset_format,
+                train_kind,
+                train_size,
+                train_weights,
+                run_name,
+                epochs,
+                batch_size,
+                lr,
+            ],
+            outputs=[banner, timer, stop_btn],
+        )
+        stop_btn.click(stop_training, outputs=banner)
+        timer.tick(
+            poll_training,
+            inputs=shown_log_size,
+            outputs=[
+                banner,
+                loss_plot,
+                map_plot,
+                log_box,
+                use_btn,
+                timer,
+                checkpoint,
+                train_weights,
+                stop_btn,
+                shown_log_size,
+            ],
+        )
+        use_btn.click(use_trained_model, outputs=[checkpoint, tabs])
+        tensorboard_port = _free_port()
+        start_tensorboard = partial(_start_tensorboard, tensorboard_port)
+        train_tab.select(start_tensorboard)  # so it's up by the time it's opened
+        tensorboard_btn.click(
+            start_tensorboard,
+            js=f"() => {{ open(`http://${{location.hostname}}:{tensorboard_port}`); }}",
+        )
+        demo.load(_on_load, outputs=[checkpoint, train_weights, banner, timer, stop_btn])
+    return demo
 
 
 def main(
@@ -272,7 +711,8 @@ def main(
     inbrowser: bool = True,
 ) -> None:
     """Serve the demo. Called by `mouselite app`."""
-    demo.launch(
+    example_videos = _example_videos()
+    build_demo(example_videos).launch(
         theme=THEME,
         favicon_path=str(ICON),
         share=share,
@@ -281,7 +721,7 @@ def main(
         footer_links=[],
         inbrowser=inbrowser,
         # the clips live in the HF cache, outside the cwd and temp dirs gradio serves
-        allowed_paths=[str(path) for path in EXAMPLE_VIDEOS],
+        allowed_paths=[str(path) for path in example_videos],
     )
 
 

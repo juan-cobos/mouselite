@@ -22,8 +22,8 @@ Tracking is handled by [trackers](https://github.com/roboflow/trackers).
 
 ## The `run` path, frame by frame
 
-`Pipeline.run` hands a callback to `supervision.process_video`, which reads the video
-with OpenCV and calls the callback once per frame with `(frame, frame_idx)`:
+`Pipeline.run` reads the video with OpenCV and handles each frame, with its
+`frame_idx`, in turn:
 
 ```
 frame ──▶ is frame_idx % every == 0 ?
@@ -44,7 +44,7 @@ frame ──▶ is frame_idx % every == 0 ?
               └──────────────┬─────────────────────────┘
                              ▼
                    MetaAnnotator.annotate()  →  annotated video frame
-                   (+ FPS HUD, + preview window)
+                   (+ FPS HUD, + preview window; skipped with video=False)
 ```
 
 Points worth knowing:

@@ -244,12 +244,20 @@ def test_list_formats() -> None:
 def test_train_from_converts_then_trains(
     dlc_project: Path, tmp_path: Path, monkeypatch, symlink: bool
 ) -> None:
+    import rfdetr.visualize
+
+    import mouselite.runs
     import mouselite.train
 
     calls = []
-    monkeypatch.setattr(
-        mouselite.train, "train", lambda dataset_dir, kind, **kw: calls.append(dataset_dir)
-    )
+
+    class FakeModel:
+        def train(self, dataset_dir, **kwargs):
+            calls.append(Path(dataset_dir))
+
+    monkeypatch.setattr(mouselite.train, "build_model", lambda *a, **kw: FakeModel())
+    monkeypatch.setattr(rfdetr.visualize, "plot_metrics", lambda *a, **kw: None)
+    monkeypatch.setattr(mouselite.runs, "CACHE_DIR", tmp_path / "cache")
     output_dir = tmp_path / "run"
     args = ["train", str(dlc_project), "--kind", "keypoints", "--from", "deeplabcut"]
     args += ["--output-dir", str(output_dir), "--symlink" if symlink else "--no-symlink"]
