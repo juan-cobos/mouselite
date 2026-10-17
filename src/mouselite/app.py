@@ -108,10 +108,8 @@ def run_inference(
 
     out_dir = _tmp_dir()
     progress(0, desc="Running inference...")
-    video_out_path = pipeline.run(video_path, output_dir=out_dir)
-
-    # Pipeline writes the COCO export and CSV tables next to the annotated video.
-    results_dir = video_out_path.parent
+    results_dir = pipeline.run(video_path, output_dir=out_dir)
+    video_out_path = results_dir / f"{Path(video_path).stem}_annotated.mp4"
     state = {"results_dir": str(results_dir), "video_path": str(video_path)}
     return str(video_out_path), _exports(results_dir, video_path), state
 
