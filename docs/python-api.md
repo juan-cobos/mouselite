@@ -144,7 +144,8 @@ tracker = get_tracker("bytetrack")
 annotator = MetaAnnotator()
 
 for frame in sv.get_video_frames_generator("cage.mp4"):
-    preds = model.predict(frame, threshold=0.5)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # video frames are BGR; the models expect RGB
+    preds = model.predict(rgb, threshold=0.5)
     if isinstance(preds, sv.KeyPoints):
         preds = _keypoints_to_detections(preds)
     preds = tracker.update(preds.with_nms(threshold=0.5), frame=frame)
