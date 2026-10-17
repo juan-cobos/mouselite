@@ -27,6 +27,7 @@ class MLModel(Protocol):
         self,
         frame: np.ndarray,
         threshold: float,
+        include_source_image: bool,
     ) -> sv.Detections | sv.KeyPoints: ...
 
 
@@ -163,7 +164,12 @@ class Pipeline:
         if frame_idx % self.every == 0:
             # Video frames are BGR; the models are trained on (and expect) RGB.
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            detections = self.model.predict(rgb, threshold=self.threshold)
+            # Nothing reads the copy of the frame rfdetr attaches to its results by default.
+            detections = self.model.predict(
+                rgb,
+                threshold=self.threshold,
+                include_source_image=False,
+            )
             if isinstance(detections, sv.KeyPoints):
                 detections = _keypoints_to_detections(detections)
             detections = detections.with_nms(threshold=self.nms_threshold)
