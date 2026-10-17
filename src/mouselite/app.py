@@ -231,6 +231,7 @@ def train_model(
     run_name,
     epochs,
     batch_size,
+    lr,
     progress=gr.Progress(),  # noqa: B008 — Gradio injects via this default
 ):
     """Prepare the dataset here, then train in a separate process."""
@@ -270,6 +271,7 @@ def train_model(
         "output_dir": output_dir,
         "epochs": int(epochs),
         "batch_size": int(batch_size),
+        "lr": float(lr),
     }
     # spawn, not fork: this process may hold CUDA state and runs Gradio's threads
     context = multiprocessing.get_context("spawn")
@@ -558,10 +560,17 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                             allow_custom_value=True,
                         )
                         train_kind = gr.Dropdown(
-                            choices=KINDS, value="keypoints", label="Kind"
+                            choices=KINDS,
+                            value="keypoints",
+                            label="Kind",
+                            info="Which model to train: pose, detection or segmentation.",
                         )
                         train_size = gr.Dropdown(
-                            choices=SIZES, value="medium", label="Size", interactive=False
+                            choices=SIZES,
+                            value="medium",
+                            label="Size",
+                            info="Larger models are more accurate but slower.",
+                            interactive=False,
                         )
                     with gr.Column():
                         epochs = gr.Slider(
@@ -573,7 +582,13 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                             step=1,
                             value=4,
                             label="Batch size",
-                            info="Lower it if the GPU runs out of memory.",
+                        )
+                        lr = gr.Slider(
+                            minimum=5e-5,
+                            maximum=5e-4,
+                            step=5e-5,
+                            value=1e-4,
+                            label="Learning rate",
                         )
                 with gr.Row():
                     start_btn = gr.Button(
@@ -659,6 +674,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                 run_name,
                 epochs,
                 batch_size,
+                lr,
             ],
             outputs=[banner, timer, stop_btn],
         )
