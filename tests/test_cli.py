@@ -35,10 +35,7 @@ def test_run_batch(tmp_path: Path, monkeypatch) -> None:
 
     assert result.exit_code == 0, result.output
     wrote = [line for line in result.output.splitlines() if line.startswith("wrote ")]
-    assert wrote == [
-        f"wrote {output_dir / f'{stem}_results' / f'{stem}_annotated.mp4'}"
-        for stem in ("a", "b", "c")
-    ]
+    assert wrote == [f"wrote {output_dir / f'{stem}_results'}" for stem in ("a", "b", "c")]
     for stem in ("a", "b", "c"):
         assert (output_dir / f"{stem}_results" / f"{stem}_annotations.json").exists()
 

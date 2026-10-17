@@ -15,7 +15,12 @@ from mouselite.pipeline import Pipeline
 class FakeKeypointModel:
     class_names: ClassVar[list[str]] = ["mouse"]
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         return sv.KeyPoints(
             xy=np.array([[[7, 7], [10, 10], [15, 15]]], dtype=np.float32),
             class_id=np.array([0]),
@@ -32,11 +37,16 @@ class EmptyEveryOtherModel(FakeKeypointModel):
     def __init__(self) -> None:
         self.calls = 0
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         self.calls += 1
         if self.calls % 2 == 0:
             return sv.KeyPoints.empty()
-        return super().predict(frame, threshold)
+        return super().predict(frame, threshold, include_source_image)
 
 
 class RecordingModel(FakeKeypointModel):
@@ -45,9 +55,14 @@ class RecordingModel(FakeKeypointModel):
     def __init__(self) -> None:
         self.frames: list[np.ndarray] = []
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         self.frames.append(frame)
-        return super().predict(frame, threshold)
+        return super().predict(frame, threshold, include_source_image)
 
 
 class FakeTracker(BaseTracker):
@@ -81,14 +96,15 @@ def test_run_keypoints(tmp_path: Path) -> None:
     make_video(video_path)
 
     pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker(), every=2)
-    annotated_video = pipeline.run(
+    results_dir = pipeline.run(
         video_path,
         output_dir=tmp_path / "output",
         show_progress=False,
     )
-    assert annotated_video.exists()
+    assert results_dir == tmp_path / "output" / "smoke_results"
+    assert (results_dir / "smoke_annotated.mp4").exists()
 
-    annotations_path = tmp_path / "output" / "smoke_results" / "smoke_annotations.json"
+    annotations_path = results_dir / "smoke_annotations.json"
     coco = json.loads(annotations_path.read_text())
     assert coco["images"]
     assert "frame_index" in coco["images"][0]
@@ -96,13 +112,32 @@ def test_run_keypoints(tmp_path: Path) -> None:
     assert coco["annotations"][0]["track_id"] == 0
     assert coco["annotations"][0]["score"] == pytest.approx(0.9)
 
-    results_dir = tmp_path / "output" / "smoke_results"
     trajectories = pd.read_csv(results_dir / "smoke_trajectories.csv")
     assert len(trajectories) == len(coco["annotations"])
     assert {"frame_index", "time", "track_id", "x", "y"} <= set(trajectories.columns)
     summary = pd.read_csv(results_dir / "smoke_summary.csv")
     assert summary.track_id.tolist() == [0]
     assert {"frames", "distance", "mean_speed", "duration"} <= set(summary.columns)
+
+
+def test_run_no_video(tmp_path: Path) -> None:
+    """video=False writes the exports but no annotated video."""
+    video_path = tmp_path / "smoke.mp4"
+    make_video(video_path)
+
+    pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker())
+    results_dir = pipeline.run(
+        video_path,
+        output_dir=tmp_path / "output",
+        show_progress=False,
+        video=False,
+    )
+
+    assert results_dir == tmp_path / "output" / "smoke_results"
+    assert not (results_dir / "smoke_annotated.mp4").exists()
+    coco = json.loads((results_dir / "smoke_annotations.json").read_text())
+    assert len(coco["images"]) == 6
+    assert (results_dir / "smoke_summary.csv").exists()
 
 
 def test_run_top_k_one_skips_tracking(tmp_path: Path) -> None:
