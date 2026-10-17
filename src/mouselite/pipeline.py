@@ -1,6 +1,7 @@
 """End-to-end video inference pipeline: prediction, tracking and annotation."""
 
 import warnings
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Protocol
 
@@ -13,6 +14,7 @@ from supervision.dataset.formats.coco import (
     detections_to_coco_annotations,
 )
 from supervision.utils.file import save_json_file
+from tqdm import tqdm
 from trackers.core.base import BaseTracker
 
 from mouselite.analysis import Tracks
@@ -190,9 +192,10 @@ class Pipeline:
         show: bool = False,
         show_progress: bool = True,
         hud: bool = False,
+        video: bool = True,
     ) -> Path:
         """Run inference on `video_path`, writing an annotated video, a COCO export, and
-        `<stem>_trajectories.csv` / `<stem>_summary.csv`."""
+        `<stem>_trajectories.csv` / `<stem>_summary.csv`, and returning their directory."""
         self.reset()
         video_path = Path(video_path)
         results_dir = Path(output_dir) / f"{video_path.stem}_results"
@@ -216,52 +219,54 @@ class Pipeline:
             "annotations": [],
         }
 
-        def callback(frame: np.ndarray, frame_idx: int) -> np.ndarray:
-            detections = self.process_frame(frame, frame_idx)
-            if frame_idx % self.every == 0:
-                # Frames are not written out: `frame_index` maps each image back to
-                # the source video, which is what `retrack` reads them from.
-                image_id = len(coco["images"]) + 1
-                coco["images"].append(
-                    {
-                        "id": image_id,
-                        "file_name": f"{video_path.stem}_{frame_idx:06d}.jpg",
-                        "height": frame.shape[0],
-                        "width": frame.shape[1],
-                        "frame_index": frame_idx,
-                    },
-                )
-                annotations, _ = _detections_to_coco(
-                    detections,
-                    image_id,
-                    len(coco["annotations"]) + 1,
-                )
-                coco["annotations"].extend(annotations)
-
-            annotated = self.annotate(frame, detections)
-
-            if fps_monitor is not None:
-                fps_monitor.tick()
-                sv.draw_text(
-                    annotated,
-                    f"FPS: {fps_monitor.fps:.1f}",
-                    text_anchor=sv.Point(x=40, y=20),
-                    text_color=sv.Color.WHITE,
-                    background_color=sv.Color.BLACK,
-                )
-
-            if show:
-                cv2.imshow("mouselite", annotated)
-                cv2.waitKey(1)
-            return annotated
-
-        sv.process_video(
-            source_path=str(video_path),
-            target_path=str(target),
-            callback=callback,
-            show_progress=show_progress,
-            progress_message=f"mouselite: {video_path.name}",
+        frames = tqdm(
+            sv.get_video_frames_generator(str(video_path)),
+            total=video_info.total_frames,
+            disable=not show_progress,
+            desc=f"mouselite: {video_path.name}",
         )
+        with sv.VideoSink(str(target), video_info) if video else nullcontext() as sink:
+            for frame_idx, frame in enumerate(frames):
+                detections = self.process_frame(frame, frame_idx)
+                if frame_idx % self.every == 0:
+                    # Frames are not written out: `frame_index` maps each image back to
+                    # the source video, which is what `retrack` reads them from.
+                    image_id = len(coco["images"]) + 1
+                    coco["images"].append(
+                        {
+                            "id": image_id,
+                            "file_name": f"{video_path.stem}_{frame_idx:06d}.jpg",
+                            "height": frame.shape[0],
+                            "width": frame.shape[1],
+                            "frame_index": frame_idx,
+                        },
+                    )
+                    annotations, _ = _detections_to_coco(
+                        detections,
+                        image_id,
+                        len(coco["annotations"]) + 1,
+                    )
+                    coco["annotations"].extend(annotations)
+
+                if not (video or show):
+                    continue
+                annotated = self.annotate(frame, detections)
+
+                if fps_monitor is not None:
+                    fps_monitor.tick()
+                    sv.draw_text(
+                        annotated,
+                        f"FPS: {fps_monitor.fps:.1f}",
+                        text_anchor=sv.Point(x=40, y=20),
+                        text_color=sv.Color.WHITE,
+                        background_color=sv.Color.BLACK,
+                    )
+
+                if show:
+                    cv2.imshow("mouselite", annotated)
+                    cv2.waitKey(1)
+                if video:
+                    sink.write_frame(annotated)
 
         if show:
             cv2.destroyAllWindows()
@@ -271,4 +276,4 @@ class Pipeline:
         tracks.to_dataframe().to_csv(trajectories_path, index=False)
         tracks.summary().to_csv(summary_path, index=False)
 
-        return target
+        return results_dir

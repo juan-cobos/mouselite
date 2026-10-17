@@ -43,6 +43,10 @@ def run(
     batch_size: int = 1,
     compile: bool = False,
     show_progress: bool = True,
+    video: Annotated[
+        bool,
+        typer.Option(help="Write the annotated video; --no-video keeps only the exports."),
+    ] = True,
 ) -> None:
     """Run inference on each video, writing an annotated video and a COCO export."""
     from mouselite.models import get_model
@@ -75,6 +79,7 @@ def run(
             show=show,
             show_progress=show_progress,
             hud=hud,
+            video=video,
         )
         typer.echo(f"wrote {output}")
 
