@@ -40,14 +40,16 @@ def save_run(run_dir: str | Path, cache_dir: str | Path | None = None) -> Path:
 def find_runs(roots: tuple[str | Path, ...] | None = None) -> list[dict]:
     """Return the info, folder and best checkpoint of every run found."""
     roots = roots if roots is not None else (OUTPUT_DIR, CACHE_DIR)
-    run_dirs = dict.fromkeys(  # in order of the roots, sorted within each
-        run_dir
-        for root in map(Path, roots)
-        if root.is_dir()
-        for run_dir in sorted(
+    run_dirs = []  # in order of the roots, sorted within each
+    seen = set()  # names of the runs under earlier roots
+    for root in map(Path, roots):
+        if not root.is_dir():
+            continue
+        found = sorted(
             {path.parent for name in BEST_CHECKPOINTS for path in root.rglob(name)},
         )
-    )
+        run_dirs += [run_dir for run_dir in found if run_dir.name not in seen]
+        seen.update(run_dir.name for run_dir in found)
     runs = []
     for run_dir in run_dirs:
         checkpoint = next(

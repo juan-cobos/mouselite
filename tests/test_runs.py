@@ -39,6 +39,17 @@ def test_find_runs(tmp_path: Path) -> None:
     assert runs[1]["checkpoint"] == new / "checkpoint_best_total.pth"  # preferred
 
 
+def test_find_runs_skips_cached_copies(tmp_path: Path) -> None:
+    """A run copied to the cache is listed once, from where it was trained."""
+    run_dir = _make_run(tmp_path / "output" / "run", "checkpoint_best_ema.pth")
+    save_run(run_dir, tmp_path / "cache")
+    only_cached = _make_run(tmp_path / "cache" / "gone", "checkpoint_best_ema.pth")
+
+    runs = find_runs((tmp_path / "output", tmp_path / "cache"))
+
+    assert [run["dir"] for run in runs] == [run_dir, only_cached]
+
+
 def test_save_run(tmp_path: Path) -> None:
     run_dir = _make_run(
         tmp_path / "run",
