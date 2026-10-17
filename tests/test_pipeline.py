@@ -15,7 +15,12 @@ from mouselite.pipeline import Pipeline
 class FakeKeypointModel:
     class_names: ClassVar[list[str]] = ["mouse"]
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         return sv.KeyPoints(
             xy=np.array([[[7, 7], [10, 10], [15, 15]]], dtype=np.float32),
             class_id=np.array([0]),
@@ -32,11 +37,16 @@ class EmptyEveryOtherModel(FakeKeypointModel):
     def __init__(self) -> None:
         self.calls = 0
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         self.calls += 1
         if self.calls % 2 == 0:
             return sv.KeyPoints.empty()
-        return super().predict(frame, threshold)
+        return super().predict(frame, threshold, include_source_image)
 
 
 class RecordingModel(FakeKeypointModel):
@@ -45,9 +55,14 @@ class RecordingModel(FakeKeypointModel):
     def __init__(self) -> None:
         self.frames: list[np.ndarray] = []
 
-    def predict(self, frame: np.ndarray, threshold: float) -> sv.KeyPoints:
+    def predict(
+        self,
+        frame: np.ndarray,
+        threshold: float,
+        include_source_image: bool,
+    ) -> sv.KeyPoints:
         self.frames.append(frame)
-        return super().predict(frame, threshold)
+        return super().predict(frame, threshold, include_source_image)
 
 
 class FakeTracker(BaseTracker):
