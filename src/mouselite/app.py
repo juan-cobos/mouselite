@@ -529,66 +529,64 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
                         )
 
             with gr.Tab("Train", id="train") as train_tab:
-                with gr.Row():
-                    with gr.Column():
-                        dataset_dir = gr.Textbox(
-                            label="Dataset",
-                            placeholder="/path/to/dataset",
-                            info="A COCO dataset (train/ and valid/ folders), or a "
-                            "DeepLabCut / Lightning Pose project.",
-                        )
-                        dataset_format = gr.Dropdown(
-                            choices=[COCO, *FORMATS],
-                            value=COCO,
-                            label="Format",
-                            info="Projects in other formats are converted into the run "
-                            "folder.",
-                        )
-                        run_name = gr.Textbox(
-                            label="Run name",
-                            placeholder="defaults to the date and time",
-                            info=f"Checkpoints are written to {OUTPUT_DIR}/<run name>.",
-                        )
-                    with gr.Column():
-                        train_weights = gr.Dropdown(
-                            choices=list(TRAIN_WEIGHTS),
-                            value=MOUSELITE,
-                            label="Start from",
-                            info="Released weights are usually the best start for mice; "
-                            "or continue from a checkpoint you trained.",
-                            allow_custom_value=True,
-                        )
-                        train_kind = gr.Dropdown(
-                            choices=KINDS,
-                            value="keypoints",
-                            label="Kind",
-                            info="Which model to train: pose, detection or segmentation.",
-                        )
-                        train_size = gr.Dropdown(
-                            choices=SIZES,
-                            value="medium",
-                            label="Size",
-                            info="Larger models are more accurate but slower.",
-                            interactive=False,
-                        )
-                    with gr.Column():
-                        epochs = gr.Slider(
-                            minimum=1, maximum=200, step=1, value=30, label="Epochs"
-                        )
-                        batch_size = gr.Slider(
-                            minimum=1,
-                            maximum=32,
-                            step=1,
-                            value=4,
-                            label="Batch size",
-                        )
-                        lr = gr.Slider(
-                            minimum=5e-5,
-                            maximum=5e-4,
-                            step=5e-5,
-                            value=1e-4,
-                            label="Learning rate",
-                        )
+                with gr.Row(equal_height=True):
+                    dataset_dir = gr.Textbox(
+                        label="Dataset",
+                        placeholder="/path/to/dataset",
+                        info="A COCO dataset (train/ and valid/ folders), or a "
+                        "DeepLabCut / Lightning Pose project.",
+                    )
+                    train_weights = gr.Dropdown(
+                        choices=list(TRAIN_WEIGHTS),
+                        value=MOUSELITE,
+                        label="Start from",
+                        info="Released weights are usually the best start for mice; "
+                        "or continue from a checkpoint you trained.",
+                        allow_custom_value=True,
+                    )
+                    epochs = gr.Slider(
+                        minimum=1, maximum=200, step=1, value=30, label="Epochs"
+                    )
+                with gr.Row(equal_height=True):
+                    dataset_format = gr.Dropdown(
+                        choices=[COCO, *FORMATS],
+                        value=COCO,
+                        label="Format",
+                        info="Projects in other formats are converted into the run folder.",
+                    )
+                    train_kind = gr.Dropdown(
+                        choices=KINDS,
+                        value="keypoints",
+                        label="Kind",
+                        info="Which model to train: pose, detection or segmentation.",
+                    )
+                    batch_size = gr.Slider(
+                        minimum=1,
+                        maximum=32,
+                        step=1,
+                        value=4,
+                        label="Batch size",
+                    )
+                with gr.Row(equal_height=True):
+                    run_name = gr.Textbox(
+                        label="Run name",
+                        placeholder="defaults to the date and time",
+                        info=f"Checkpoints are written to {OUTPUT_DIR}/<run name>.",
+                    )
+                    train_size = gr.Dropdown(
+                        choices=SIZES,
+                        value="medium",
+                        label="Size",
+                        info="Larger models are more accurate but slower.",
+                        interactive=False,
+                    )
+                    lr = gr.Slider(
+                        minimum=5e-5,
+                        maximum=5e-4,
+                        step=5e-5,
+                        value=1e-4,
+                        label="Learning rate",
+                    )
                 with gr.Row():
                     start_btn = gr.Button(
                         "Start training",
