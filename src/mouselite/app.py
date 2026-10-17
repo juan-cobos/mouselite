@@ -105,15 +105,16 @@ def _exports(results_dir: str | Path, video_path: str | Path):
     return gr.update(value=files, visible=True)
 
 
-def _checkpoint_choices(*fixed: tuple[str, str]) -> list[tuple[str, str]]:
-    """Dropdown choices: the fixed ones, then the checkpoint of every run found."""
-    choices = list(fixed)
+def _checkpoint_choices() -> list[dict]:
+    """Inference and train dropdown choices: the fixed ones, then every run found."""
+    runs = []
     for run in find_runs():
         model = " ".join(filter(None, (run.get("kind"), run.get("size")))) or "unknown"
         cached = " · cached" if run["dir"].is_relative_to(CACHE_DIR) else ""
         label = f"{run['dir'].name} · {model}{cached}"
-        choices.append((label, str(run["checkpoint"])))
-    return choices
+        runs.append((label, str(run["checkpoint"])))
+    fixed_choices = (INFERENCE_WEIGHTS, TRAIN_WEIGHTS)
+    return [gr.update(choices=[*fixed, *runs]) for fixed in fixed_choices]
 
 
 def _checkpoint_info(choice: str | None) -> dict:
@@ -394,8 +395,7 @@ def poll_training(shown_log_size=None):
         *updates,
         gr.update(visible=finished),
         gr.Timer(active=False),
-        gr.update(choices=_checkpoint_choices(*INFERENCE_WEIGHTS)),
-        gr.update(choices=_checkpoint_choices(*TRAIN_WEIGHTS)),
+        *_checkpoint_choices(),
         gr.update(interactive=False),  # stop
         log_size,
     )
@@ -410,8 +410,7 @@ def use_trained_model():
 def _on_load():
     """Fresh checkpoint lists, and reattach to a run started before a page reload."""
     return (
-        gr.update(choices=_checkpoint_choices(*INFERENCE_WEIGHTS)),
-        gr.update(choices=_checkpoint_choices(*TRAIN_WEIGHTS)),
+        *_checkpoint_choices(),
         _banner(),
         gr.Timer(active=bool(_job)),
         gr.update(interactive=_training()),  # stop
@@ -623,7 +622,7 @@ def build_demo(example_videos: list[Path]) -> gr.Blocks:
             _lock_model, inputs=[checkpoint, kind], outputs=[kind, model_size]
         )
         refresh_btn.click(
-            lambda: gr.update(choices=_checkpoint_choices(*INFERENCE_WEIGHTS)),
+            lambda: _checkpoint_choices()[0],
             outputs=checkpoint,
         )
 
