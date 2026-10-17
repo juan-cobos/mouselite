@@ -92,13 +92,13 @@ every annotation in `annotations_path`.
 A `Pipeline` is reusable: `run` calls `tracker.reset()` first. It is not thread-safe
 (the tracker and annotator carry state).
 
-### `Pipeline.run(video_path, output_dir="output", show=False, show_progress=True, hud=False) -> Path`
+### `Pipeline.run(video_path, output_dir="output", show=False, show_progress=True, hud=False, video=True) -> Path`
 
-Processes the whole video and returns the annotated video's path,
-`<output_dir>/<stem>_results/<stem>_annotated.mp4`. The COCO export goes beside it as
-`<stem>_annotations.json`; each image records its `frame_index` in the video rather than
-being written to disk. `show` opens an OpenCV window; `hud` burns in an FPS
-counter.
+Processes the whole video and returns its results folder,
+`<output_dir>/<stem>_results/`. It holds the annotated video, `<stem>_annotated.mp4`,
+and the COCO export, `<stem>_annotations.json`; each image records its `frame_index` in
+the video rather than being written to disk. `video=False` skips the annotated video.
+`show` opens an OpenCV window; `hud` burns in an FPS counter.
 
 ```python
 from mouselite.models import get_model
@@ -109,8 +109,8 @@ model = get_model("keypoints")
 tracker = get_tracker("bytetrack", lost_track_buffer=60)
 
 pipeline = Pipeline(model, tracker, threshold=0.5, top_k=2, every=2)
-video = pipeline.run("cage.mp4", output_dir="output")
-export = video.parent / "cage_annotations.json"
+results = pipeline.run("cage.mp4", output_dir="output")
+export = results / "cage_annotations.json"
 ```
 
 To process several videos with one loaded model, reuse the `Pipeline`: `run` resets
@@ -144,7 +144,8 @@ tracker = get_tracker("bytetrack")
 annotator = MetaAnnotator()
 
 for frame in sv.get_video_frames_generator("cage.mp4"):
-    preds = model.predict(frame, threshold=0.5)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # video frames are BGR; the models expect RGB
+    preds = model.predict(rgb, threshold=0.5)
     if isinstance(preds, sv.KeyPoints):
         preds = _keypoints_to_detections(preds)
     preds = tracker.update(preds.with_nms(threshold=0.5), frame=frame)

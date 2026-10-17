@@ -119,7 +119,7 @@ from mouselite.pipeline import Pipeline
 from mouselite.tracker import get_tracker, retrack
 
 pipeline = Pipeline(get_model("keypoints"), get_tracker("bytetrack"), threshold=0.5, top_k=2)
-annotated_path = pipeline.run("video.mp4", output_dir="output")
+results_dir = pipeline.run("video.mp4", output_dir="output")
 
 retracked_path = retrack(
     "output/video_results/video_annotations.json",

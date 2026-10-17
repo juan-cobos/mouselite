@@ -34,14 +34,14 @@ and writes, per video:
 ```
 <output-dir>/
 └── <stem>_results/
-    ├── <stem>_annotated.mp4
+    ├── <stem>_annotated.mp4      (not with --no-video)
     ├── <stem>_annotations.json
     ├── <stem>_trajectories.csv
     └── <stem>_summary.csv
 ```
 
-where `<stem>` is the video's file name without extension. Prints `wrote <path>` for
-each video on success. `<stem>_annotations.json` is a COCO detection/keypoint file, with the
+where `<stem>` is the video's file name without extension. Prints `wrote <path>` with
+each video's results folder on success. `<stem>_annotations.json` is a COCO detection/keypoint file, with the
 frame index, a confidence `score` and track id per annotation, and the video's frame rate added.
 `<stem>_trajectories.csv` is the same data as a long table with one row per frame and track
 (box centre, box, area and keypoints); `<stem>_summary.csv` has one row per track (frames
@@ -85,6 +85,7 @@ Applied in this order, on every inference frame:
 | ------ | ------- | ------- |
 | `--every N` | `1` | Run inference on 1 of every `N` frames; the frames in between are annotated with the last predictions. Only inference frames are exported. |
 | `--output-dir` | `output` | Directory for the video and the export. Created if missing. |
+| `--video` / `--no-video` | on | Write the annotated video. `--no-video` keeps only the export and tables, and skips drawing the frames. The video is the bulk of the disk space, so turn it off for large batches. |
 | `--show` / `--no-show` | off | Open a window and preview each annotated frame as it is produced. Needs a display. |
 | `--hud` / `--no-hud` | off | Burn a live `FPS: …` counter (of the pipeline, not the video) into the top-left of the output. |
 | `--show-progress` / `--no-show-progress` | on | Progress bar on stderr. |
@@ -223,7 +224,7 @@ picking a trained checkpoint sets and locks the kind and size it was trained wit
 path to a checkpoint elsewhere can be typed in instead.
 
 The **Train** tab fine-tunes a model like `train` does, given a dataset folder and its
-format. A DeepLabCut or Lightning Pose project is
+format, and the epochs, batch size and learning rate (RF-DETR's `1e-4` by default). A DeepLabCut or Lightning Pose project is
 converted in the app first, so problems with the dataset show up before training
 starts. Training then calls `train` in a separate process,
 writing to `output/<run name>/` plus a `train.log`, so the Inference tab stays usable
