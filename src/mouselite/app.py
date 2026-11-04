@@ -251,7 +251,7 @@ def train_model(
     from_format = None if dataset_format == COCO else dataset_format
     try:
         dataset = prepare_dataset(dataset_dir, output_dir, kind, from_format=from_format)
-    except (ValueError, FileNotFoundError, AssertionError, KeyError) as exc:
+    except (ValueError, OSError, KeyError) as exc:
         gr.Warning(f"Could not read the dataset: {exc}")
         return gr.update(), gr.update(), gr.update()
     missing = [

@@ -13,10 +13,10 @@ import random
 import shutil
 from pathlib import Path
 
-import cv2
 import numpy as np
 import pandas as pd
 import yaml
+from PIL import Image
 
 Loaded = tuple[list[Path], np.ndarray, dict]
 
@@ -137,6 +137,10 @@ def _write_coco_split(
         zip(image_paths, xy, strict=True),
         start=1,
     ):
+        # Reads only the header. Faster than cv2.imread but doesn't verify image loading
+        with Image.open(image_path) as image:
+            width, height = image.size
+
         target = split_dir / f"{image_path.parent.name}_{image_path.name}"
         if target.is_symlink() or target.exists():
             target.unlink()
@@ -145,7 +149,6 @@ def _write_coco_split(
         else:
             shutil.copyfile(image_path, target)
 
-        height, width = cv2.imread(str(image_path), cv2.IMREAD_UNCHANGED).shape[:2]
         images.append(
             {"id": image_id, "file_name": target.name, "height": height, "width": width},
         )
