@@ -56,3 +56,6 @@ select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
 # Heavy and optional imports stay inside functions. Set here, not in `ignore`, because
 # that is dropped when an editor overrides `select`.
 "*.py" = ["PLC0415"]
+
+[tool.ty.environment]
+python = ".venv"
