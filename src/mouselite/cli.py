@@ -101,7 +101,8 @@ def retrack(
     show_progress: bool = True,
 ) -> None:
     """Re-run tracking on a previously exported COCO dataset and the video it came from,
-    without running inference."""
+    without running inference.
+    """
     from mouselite.tracker import retrack as retrack_video
 
     tracker_kwargs = {
@@ -129,7 +130,8 @@ def train(
         typer.Option(help="`base` (rfdetr pretrained), `mouselite`, or a checkpoint path."),
     ] = "base",
     output_dir: Annotated[
-        Path | None, typer.Option(help="Defaults to output/<timestamp>.")
+        Path | None,
+        typer.Option(help="Defaults to output/<timestamp>."),
     ] = None,
     epochs: int = 10,
     batch_size: int = 4,
@@ -151,7 +153,7 @@ def train(
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
         from mouselite.train import train as train_model
-    except ImportError as exc:  # the train extra (which includes convert) is optional
+    except ImportError as exc:  # the train extra is optional
         typer.echo(
             f"{exc}\nTraining needs extras: install with `pip install mouselite[train]`.",
             err=True,
@@ -231,21 +233,14 @@ def list_runs() -> None:
         typer.echo(
             " | ".join(
                 cell.ljust(width) for cell, width in zip(row, widths, strict=True)
-            ).rstrip()
+            ).rstrip(),
         )
 
 
 @app.command("list-formats")
 def list_formats() -> None:
-    r"""Print the dataset formats `train --from` accepts. Needs `mouselite\[convert]`."""
-    try:
-        from mouselite.format import FORMATS
-    except ImportError as exc:  # pandas/tables are optional
-        typer.echo(
-            f"{exc}\nInstall the extra with `pip install mouselite[convert]`.",
-            err=True,
-        )
-        raise typer.Exit(1) from exc
+    """Print the dataset formats `train --from` accepts."""
+    from mouselite.format import FORMATS
 
     for name in FORMATS:
         typer.echo(name)

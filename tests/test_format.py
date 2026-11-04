@@ -3,15 +3,13 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import pandas as pd
 import pytest
 import yaml
 from typer.testing import CliRunner
 
-pd = pytest.importorskip("pandas")
-pytest.importorskip("tables")
-
-from mouselite.cli import app  # noqa: E402
-from mouselite.format import FORMATS, convert, prepare_dataset  # noqa: E402
+from mouselite.cli import app
+from mouselite.format import FORMATS, convert, prepare_dataset
 
 runner = CliRunner()
 

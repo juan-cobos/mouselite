@@ -1,7 +1,7 @@
 """Convert pose-estimation projects into the COCO keypoint layout rfdetr trains on.
 
-Needs `pip install mouselite[convert]`. Each loader in `FORMATS` returns the labeled
-frames of a project as `(image_paths, xy, category)`, where `xy` is an array of shape
+Each loader in `FORMATS` returns the labeled frames of a project as
+`(image_paths, xy, category)`, where `xy` is an array of shape
 `(frames, individuals, keypoints, 2)` with NaN for unlabeled keypoints and `category`
 is the COCO category dict (with `keypoints` and `skeleton`). `convert` then splits the
 frames and writes `train/` and `valid/` folders of symlinked (or copied) images plus
@@ -40,7 +40,7 @@ def from_deeplabcut(path: str | Path, class_name: str = "mouse") -> Loaded:
     files = [f for f in files if f.exists()]
     if not files:
         raise FileNotFoundError(
-            f"No labeled data found in {config_path.parent / 'labeled-data'}"
+            f"No labeled data found in {config_path.parent / 'labeled-data'}",
         )
     df = pd.concat([pd.read_hdf(f) for f in files])
 
@@ -95,8 +95,9 @@ def from_lightning_pose(path: str | Path, class_name: str = "mouse") -> Loaded:
             df.loc[hidden, [(scorer, bodypart, "x"), (scorer, bodypart, "y")]] = np.nan
     df = df.reindex(
         columns=pd.MultiIndex.from_product(
-            [[scorer], bodyparts, ["x", "y"]], names=["scorer", "bodyparts", "coords"]
-        )
+            [[scorer], bodyparts, ["x", "y"]],
+            names=["scorer", "bodyparts", "coords"],
+        ),
     )
     xy = df.to_numpy(dtype=np.float32).reshape(len(df), 1, len(bodyparts), 2)
     image_paths = [project_dir / str(index).replace("\\", "/") for index in df.index]
@@ -130,7 +131,8 @@ def _write_coco_split(
     split_dir.mkdir(parents=True, exist_ok=True)
     images, annotations = [], []
     for image_id, (image_path, image_xy) in enumerate(
-        zip(image_paths, xy, strict=True), start=1
+        zip(image_paths, xy, strict=True),
+        start=1,
     ):
         target = split_dir / f"{image_path.parent.name}_{image_path.name}"
         if target.is_symlink() or target.exists():
@@ -142,7 +144,7 @@ def _write_coco_split(
 
         height, width = cv2.imread(str(image_path), cv2.IMREAD_UNCHANGED).shape[:2]
         images.append(
-            {"id": image_id, "file_name": target.name, "height": height, "width": width}
+            {"id": image_id, "file_name": target.name, "height": height, "width": width},
         )
 
         for instance_xy in image_xy:
@@ -163,7 +165,7 @@ def _write_coco_split(
                     "iscrowd": 0,
                     "keypoints": keypoints.reshape(-1).tolist(),
                     "num_keypoints": int(visible.sum()),
-                }
+                },
             )
 
     coco = {
@@ -219,6 +221,6 @@ def prepare_dataset(
     if kind == "segmentation":
         raise ValueError(
             f"Converting from {from_format} is not supported for segmentation: "
-            "pose formats carry keypoints, not masks."
+            "pose formats carry keypoints, not masks.",
         )
     return convert(dataset_dir, Path(output_dir) / "dataset", from_format, symlink=symlink)

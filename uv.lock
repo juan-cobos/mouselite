@@ -2229,8 +2229,10 @@ dependencies = [
     { name = "huggingface-hub" },
     { name = "opencv-python" },
     { name = "pandas" },
+    { name = "pyyaml" },
     { name = "rfdetr" },
     { name = "supervision" },
+    { name = "tables" },
     { name = "tqdm" },
     { name = "trackers" },
     { name = "typer" },
@@ -2240,14 +2242,9 @@ dependencies = [
 app = [
     { name = "gradio" },
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
-    { name = "tables" },
-]
-convert = [
-    { name = "tables" },
 ]
 train = [
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
-    { name = "tables" },
 ]
 
 [package.dev-dependencies]
@@ -2261,19 +2258,19 @@ dev = [
 requires-dist = [
     { name = "gradio", marker = "extra == 'app'", specifier = ">=6.0.0" },
     { name = "huggingface-hub", specifier = ">=1.27.0" },
-    { name = "mouselite", extras = ["convert"], marker = "extra == 'train'" },
     { name = "mouselite", extras = ["train"], marker = "extra == 'app'" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "pandas", specifier = ">=2.0.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "rfdetr", specifier = ">=1.9.2" },
     { name = "rfdetr", extras = ["train", "loggers", "visual"], marker = "extra == 'train'" },
     { name = "supervision", specifier = ">=0.30.0" },
-    { name = "tables", marker = "extra == 'convert'", specifier = ">=3.9.0" },
+    { name = "tables", specifier = ">=3.9.0" },
     { name = "tqdm", specifier = ">=4.70.0" },
     { name = "trackers", specifier = ">=2.6.0" },
     { name = "typer", specifier = ">=0.27.1" },
 ]
-provides-extras = ["app", "convert", "train"]
+provides-extras = ["app", "train"]
 
 [package.metadata.requires-dev]
 dev = [

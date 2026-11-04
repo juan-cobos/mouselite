@@ -12,8 +12,7 @@ uv run pre-commit install    # ruff check --fix and ruff format on every commit
 ```
 
 `uv sync` installs the `dev` dependency group by default. Drop `--extra app` if you
-don't need the demo; add `--extra train` to fine-tune and to run the
-format-conversion tests (`tests/test_format.py` is skipped without pandas).
+don't need the demo; add `--extra train` to fine-tune.
 
 ## Layout
 

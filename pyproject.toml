@@ -13,8 +13,10 @@ dependencies = [
     "huggingface-hub>=1.27.0",
     "opencv-python>=5.0.0.93",
     "pandas>=2.0.0",
+    "pyyaml>=6.0",
     "rfdetr>=1.9.2",
     "supervision>=0.30.0",
+    "tables>=3.9.0",
     "tqdm>=4.70.0",
     "trackers>=2.6.0",
     "typer>=0.27.1",
@@ -25,12 +27,8 @@ app = [
     "gradio>=6.0.0",
     "mouselite[train]",
 ]
-convert = [
-    "tables>=3.9.0",
-]
 train = [
     "rfdetr[train,loggers,visual]",
-    "mouselite[convert]",
 ]
 
 [project.scripts]
