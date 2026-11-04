@@ -26,7 +26,9 @@ def from_deeplabcut(path: str | Path, class_name: str = "mouse") -> Loaded:
     """Load the labeled frames of a DeepLabCut project (its folder or `config.yaml`)."""
     path = Path(path)
     config_path = path / "config.yaml" if path.is_dir() else path
-    assert config_path.suffix == ".yaml", "Config path was not found"
+    if config_path.suffix != ".yaml":
+        msg = f"Config path {config_path} is not a .yaml file"
+        raise FileNotFoundError(msg)
 
     with open(config_path) as f:
         cfg = yaml.safe_load(f)
@@ -39,9 +41,9 @@ def from_deeplabcut(path: str | Path, class_name: str = "mouse") -> Loaded:
     ]
     files = [f for f in files if f.exists()]
     if not files:
-        raise FileNotFoundError(
-            f"No labeled data found in {config_path.parent / 'labeled-data'}",
-        )
+        msg = f"No labeled data found in {config_path.parent / 'labeled-data'}"
+        raise FileNotFoundError(msg)
+
     df = pd.concat([pd.read_hdf(f) for f in files])
 
     if "individuals" in df.columns.names:
@@ -82,7 +84,9 @@ def from_lightning_pose(path: str | Path, class_name: str = "mouse") -> Loaded:
     path = Path(path)
     files = sorted(path.glob("CollectedData*.csv")) if path.is_dir() else [path]
     if not files:
-        raise FileNotFoundError(f"No CollectedData*.csv found in {path}")
+        msg = f"No CollectedData*.csv found in {path}"
+        raise FileNotFoundError(msg)
+
     project_dir = path if path.is_dir() else path.parent
     df = pd.concat([pd.read_csv(f, header=[0, 1, 2], index_col=0) for f in files])
 
@@ -215,12 +219,10 @@ def prepare_dataset(
     from_format: str | None = None,
     symlink: bool = True,
 ) -> Path:
-    """The dataset to train on, converting the input first if a format is given."""
+    """Dataset to train on, converting the input first if a format is given."""
     if from_format is None:
         return Path(dataset_dir)
     if kind == "segmentation":
-        raise ValueError(
-            f"Converting from {from_format} is not supported for segmentation: "
-            "pose formats carry keypoints, not masks.",
-        )
+        msg = f"Converting from {from_format} is not supported for segmentation"
+        raise ValueError(msg)
     return convert(dataset_dir, Path(output_dir) / "dataset", from_format, symlink=symlink)
