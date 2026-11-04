@@ -259,7 +259,6 @@ lightning-pose
 
 These read `mouselite.models.MODELS`, `mouselite.tracker.TRACKERS` and
 `mouselite.format.FORMATS`, so anything you register there from Python shows up too.
-`list-formats` needs the `convert` extra, which `train` includes.
 
 ## `mouselite list-runs`
 
