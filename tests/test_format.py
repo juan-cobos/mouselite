@@ -21,10 +21,11 @@ FRAMES_PER_VIDEO = 5
 
 @pytest.fixture
 def dlc_project(tmp_path: Path) -> Path:
-    """A minimal single-animal DeepLabCut project with one unlabeled keypoint."""
+    """Minimal single-animal DeepLabCut project with one unlabeled keypoint."""
     project = tmp_path / "dlc"
     columns = pd.MultiIndex.from_product(
-        [[SCORER], BODYPARTS, ["x", "y"]], names=["scorer", "bodyparts", "coords"]
+        [[SCORER], BODYPARTS, ["x", "y"]],
+        names=["scorer", "bodyparts", "coords"],
     )
     for video in VIDEOS:
         video_dir = project / "labeled-data" / video
@@ -36,7 +37,9 @@ def dlc_project(tmp_path: Path) -> Path:
         values = np.random.default_rng(0).uniform(0, 32, size=(len(names), 6))
         values[0, 4:6] = np.nan  # first frame: Tail not labeled
         pd.DataFrame(values, index=index, columns=columns).to_hdf(
-            video_dir / f"CollectedData_{SCORER}.h5", key="df_with_missing", mode="w"
+            video_dir / f"CollectedData_{SCORER}.h5",
+            key="df_with_missing",
+            mode="w",
         )
     config = {
         "scorer": SCORER,
@@ -87,7 +90,7 @@ def test_convert_deeplabcut(dlc_project: Path, tmp_path: Path, symlink: bool) ->
 
 @pytest.fixture
 def dlc_multianimal_project(tmp_path: Path) -> Path:
-    """A two-mouse DeepLabCut project with a unique (landmark) bodypart in `single`."""
+    """Two-mouse DeepLabCut project with a unique (landmark) bodypart in `single`."""
     project = tmp_path / "dlc-ma"
     video_dir = project / "labeled-data" / "video"
     video_dir.mkdir(parents=True)
@@ -108,7 +111,9 @@ def dlc_multianimal_project(tmp_path: Path) -> Path:
     values = np.random.default_rng(0).uniform(0, 32, size=(len(names), len(columns)))
     values[0, 6:12] = np.nan  # first frame: mouse2 absent
     pd.DataFrame(values, index=index, columns=columns).to_hdf(
-        video_dir / f"CollectedData_{SCORER}.h5", key="df_with_missing", mode="w"
+        video_dir / f"CollectedData_{SCORER}.h5",
+        key="df_with_missing",
+        mode="w",
     )
     config = {
         "scorer": SCORER,
@@ -125,10 +130,14 @@ def dlc_multianimal_project(tmp_path: Path) -> Path:
 
 
 def test_convert_deeplabcut_multianimal(
-    dlc_multianimal_project: Path, tmp_path: Path
+    dlc_multianimal_project: Path,
+    tmp_path: Path,
 ) -> None:
     output_dir = convert(
-        dlc_multianimal_project, tmp_path / "out", "deeplabcut", train_fraction=1.0
+        dlc_multianimal_project,
+        tmp_path / "out",
+        "deeplabcut",
+        train_fraction=1.0,
     )
     coco = _load(output_dir / "train")
 
@@ -191,12 +200,12 @@ def test_convert_lightning_pose_multiview(lp_project: Path, tmp_path: Path) -> N
     csv.rename(lp_project / "CollectedData_view0.csv")
     (lp_project / "CollectedData_view1.csv").write_text(text)
     (lp_project / "labeled-data" / "session0").rename(
-        lp_project / "labeled-data" / "session0_view0"
+        lp_project / "labeled-data" / "session0_view0",
     )
     (lp_project / "CollectedData_view0.csv").write_text(
         (lp_project / "CollectedData_view0.csv")
         .read_text()
-        .replace("labeled-data/session0/", "labeled-data/session0_view0/")
+        .replace("labeled-data/session0/", "labeled-data/session0_view0/"),
     )
     view1 = lp_project / "labeled-data" / "session0_view1"
     view1.mkdir()
@@ -240,7 +249,10 @@ def test_list_formats() -> None:
 
 @pytest.mark.parametrize("symlink", [True, False])
 def test_train_from_converts_then_trains(
-    dlc_project: Path, tmp_path: Path, monkeypatch, symlink: bool
+    dlc_project: Path,
+    tmp_path: Path,
+    monkeypatch,
+    symlink: bool,
 ) -> None:
     import rfdetr.visualize
 
@@ -270,7 +282,8 @@ def test_train_from_converts_then_trains(
 
 def test_train_from_rejects_segmentation(dlc_project: Path) -> None:
     result = runner.invoke(
-        app, ["train", str(dlc_project), "--kind", "segmentation", "--from", "deeplabcut"]
+        app,
+        ["train", str(dlc_project), "--kind", "segmentation", "--from", "deeplabcut"],
     )
     assert result.exit_code == 1
     assert "not supported" in result.output

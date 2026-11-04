@@ -9,7 +9,6 @@ their `_annotations.coco.json`.
 """
 
 import json
-import os
 import random
 import shutil
 from pathlib import Path
@@ -142,7 +141,7 @@ def _write_coco_split(
         if target.is_symlink() or target.exists():
             target.unlink()
         if symlink:
-            os.symlink(image_path.resolve(), target)
+            target.symlink_to(image_path.resolve())
         else:
             shutil.copyfile(image_path, target)
 
