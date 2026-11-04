@@ -2227,6 +2227,8 @@ version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "opencv-python" },
     { name = "pandas" },
     { name = "pillow" },
@@ -2243,6 +2245,7 @@ dependencies = [
 app = [
     { name = "gradio" },
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
+    { name = "rich" },
 ]
 train = [
     { name = "rfdetr", extra = ["loggers", "train", "visual"] },
@@ -2260,12 +2263,14 @@ requires-dist = [
     { name = "gradio", marker = "extra == 'app'", specifier = ">=6.0.0" },
     { name = "huggingface-hub", specifier = ">=1.27.0" },
     { name = "mouselite", extras = ["train"], marker = "extra == 'app'" },
+    { name = "numpy", specifier = ">=2.0.0" },
     { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pillow", specifier = ">=10.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rfdetr", specifier = ">=1.9.2" },
     { name = "rfdetr", extras = ["train", "loggers", "visual"], marker = "extra == 'train'" },
+    { name = "rich", marker = "extra == 'app'", specifier = ">=13.0.0" },
     { name = "supervision", specifier = ">=0.30.0" },
     { name = "tables", specifier = ">=3.9.0" },
     { name = "tqdm", specifier = ">=4.70.0" },
