@@ -51,3 +51,8 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# Heavy and optional imports stay inside functions. Set here, not in `ignore`, because
+# that is dropped when an editor overrides `select`.
+"*.py" = ["PLC0415"]
