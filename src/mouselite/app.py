@@ -265,7 +265,7 @@ def train_model(
 
     output_dir.mkdir(parents=True, exist_ok=True)
     kwargs = {
-        "dataset_dir": dataset,  # already converted
+        "dataset_path": dataset,  # already converted
         "kind": kind,
         "size": size,
         "weights": weights,

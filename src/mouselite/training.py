@@ -20,7 +20,7 @@ def _now() -> str:
 
 
 def train(
-    dataset_dir: str | Path,
+    dataset_path: str | Path,
     kind: str,
     size: str = "medium",
     weights: str | Path = BASE,
@@ -31,18 +31,36 @@ def train(
     symlink: bool = True,
     **kwargs,
 ) -> Path:
-    """Train `kind`/`size` starting from `weights` (BASE, MOUSELITE or a checkpoint path).
+    """Fine-tune a model and return the folder holding its checkpoints.
 
-    Extra kwargs are forwarded to `rfdetr`'s `train` (e.g. `lr`, `resolution`, `device`).
-    Saves a `metrics.png` next to the checkpoints once training finishes. `output_dir`
-    defaults to `default_output_dir()`.
+    Args:
+        dataset_path: The dataset to train on. Without `from_format`, a folder in the
+            layout rfdetr expects (`train/` and `valid/`, each with its images and
+            `_annotations.coco.json`). With `from_format`, the project to convert first:
+            for `"deeplabcut"` its folder or its `config.yaml`, for `"lightning-pose"`
+            its folder or one of its label CSVs (`CollectedData*.csv`).
+        kind: `"detection"`, `"segmentation"` or `"keypoints"`.
+        size: `"nano"`, `"small"`, `"medium"` or `"large"`. Ignored for keypoints,
+            which has a single size.
+        weights: Where training starts from: `BASE` (rfdetr's pretrained weights),
+            `MOUSELITE` (the released mouselite weights) or a checkpoint path.
+        output_dir: Where the checkpoints, logs and converted dataset go. Defaults to
+            `default_output_dir()`.
+        epochs: Number of training epochs.
+        batch_size: Images per step.
+        from_format: The format to convert `dataset_path` from, a key of
+            `mouselite.format.FORMATS`. `None` if it is already in rfdetr's layout.
+            Not supported for segmentation.
+        symlink: When converting, symlink the images into the converted dataset
+            instead of copying them.
+        **kwargs: Forwarded to rfdetr's `train` (e.g. `lr`, `resolution`, `device`).
     """
     from rfdetr.visualize import plot_metrics
 
     from mouselite.format import prepare_dataset
 
     output_dir = Path(output_dir) if output_dir is not None else default_output_dir()
-    dataset = prepare_dataset(dataset_dir, output_dir, kind, from_format, symlink=symlink)
+    dataset = prepare_dataset(dataset_path, output_dir, kind, from_format, symlink=symlink)
     if from_format is not None:
         print(f"converted {from_format} dataset to {dataset}")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -50,7 +68,7 @@ def train(
         "kind": kind,
         "size": None if kind == "keypoints" else size,  # keypoints has a single size
         "weights": weights if weights in (BASE, MOUSELITE) else Path(weights).resolve(),
-        "dataset_dir": Path(dataset_dir).resolve(),
+        "dataset_path": Path(dataset_path).resolve(),
         "from_format": from_format,
         "epochs": epochs,
         "batch_size": batch_size,

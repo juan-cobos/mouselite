@@ -47,7 +47,7 @@ def test_train_writes_run_info(tmp_path: Path, monkeypatch, cache_dir: Path) -> 
     info = json.loads((output_dir / RUN_INFO).read_text())
     assert info["kind"] == "detection"
     assert info["size"] == "small"
-    assert info["dataset_dir"] == str((tmp_path / "data").resolve())
+    assert info["dataset_path"] == str((tmp_path / "data").resolve())
     assert info["from_format"] is None
     assert info["train_kwargs"] == {"lr": 1e-4}
     assert info["status"] == "finished"

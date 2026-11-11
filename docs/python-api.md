@@ -248,19 +248,20 @@ close = analysis.bouts(apart < 4, min_frames=10)                    # contact ep
 
 ## `mouselite.training`
 
-### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, from_format=None, symlink=True, **kwargs) -> Path`
+### `train(dataset_path, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, from_format=None, symlink=True, **kwargs) -> Path`
 
 What `mouselite train` calls, returning `output_dir`. With `from_format`, it first
-converts `dataset_dir` into `output_dir/dataset` with `format.prepare_dataset`. Builds
+converts `dataset_path` (the project folder, a DeepLabCut `config.yaml` or a Lightning
+Pose `CollectedData*.csv`) into `output_dir/dataset` with `format.prepare_dataset`. Builds
 the model with
 `models.build_model(kind, size, weights=weights)` — `weights` is `models.BASE`
 (RF-DETR's pretrained weights), `models.MOUSELITE` (the released weights) or a
-checkpoint path — runs `rfdetr`'s `train` on `dataset_dir`, and writes `metrics.png`
+checkpoint path — runs `rfdetr`'s `train` on the dataset, and writes `metrics.png`
 next to the checkpoints in `output_dir` (default `output/<timestamp>`).
 
 Before training starts it writes `checkpoints.json` to `output_dir`: the `kind`,
 `size` (`null` for keypoints), the starting `weights` (`base`, `mouselite` or the
-checkpoint's absolute path), `dataset_dir`, `from_format`, `epochs`, `batch_size`,
+checkpoint's absolute path), `dataset_path`, `from_format`, `epochs`, `batch_size`,
 the forwarded `train_kwargs`, and a `status` that goes from `running` to `finished`,
 `failed` or `interrupted`, with `started` / `finished` timestamps. It records which
 architecture the checkpoints were trained for, so a run can be loaded
