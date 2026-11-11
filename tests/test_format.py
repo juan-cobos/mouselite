@@ -268,7 +268,7 @@ def test_train_from_converts_then_trains(
     import rfdetr.visualize
 
     import mouselite.runs
-    import mouselite.train
+    import mouselite.training
 
     calls = []
 
@@ -276,7 +276,7 @@ def test_train_from_converts_then_trains(
         def train(self, dataset_dir, **kwargs):
             calls.append(Path(dataset_dir))
 
-    monkeypatch.setattr(mouselite.train, "build_model", lambda *a, **kw: FakeModel())
+    monkeypatch.setattr(mouselite.training, "build_model", lambda *a, **kw: FakeModel())
     monkeypatch.setattr(rfdetr.visualize, "plot_metrics", lambda *a, **kw: None)
     monkeypatch.setattr(mouselite.runs, "CACHE_DIR", tmp_path / "cache")
     output_dir = tmp_path / "run"

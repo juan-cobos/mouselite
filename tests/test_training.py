@@ -4,9 +4,9 @@ from pathlib import Path
 import pytest
 
 import mouselite.runs
-import mouselite.train
+import mouselite.training
 from mouselite.runs import RUN_INFO
-from mouselite.train import train
+from mouselite.training import train
 
 
 class FakeModel:
@@ -31,7 +31,7 @@ def cache_dir(tmp_path: Path, monkeypatch) -> Path:
 def _patch(monkeypatch, model: FakeModel) -> None:
     import rfdetr.visualize
 
-    monkeypatch.setattr(mouselite.train, "build_model", lambda *a, **kw: model)
+    monkeypatch.setattr(mouselite.training, "build_model", lambda *a, **kw: model)
     monkeypatch.setattr(rfdetr.visualize, "plot_metrics", lambda *a, **kw: None)
 
 

@@ -152,7 +152,7 @@ def train(
 ) -> None:
     r"""Fine-tune on a COCO dataset. Needs the extra: `pip install mouselite\[train]`."""
     try:
-        from mouselite.train import train as train_model
+        from mouselite.training import train as train_model
     except ImportError as exc:  # the train extra is optional
         typer.echo(
             f"{exc}\nTraining needs extras: install with `pip install mouselite[train]`.",

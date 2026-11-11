@@ -30,7 +30,7 @@ from mouselite.models import BASE, MODELS, MOUSELITE, get_model
 from mouselite.pipeline import Pipeline
 from mouselite.runs import CACHE_DIR, OUTPUT_DIR, find_runs, read_run_info
 from mouselite.tracker import TRACKERS, get_tracker, retrack
-from mouselite.train import default_output_dir, train_logged
+from mouselite.training import default_output_dir, train_logged
 
 ASSETS = Path(__file__).parent / "assets"
 LOGO, ICON = ASSETS / "logo.svg", ASSETS / "icon.svg"

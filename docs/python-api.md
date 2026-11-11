@@ -246,7 +246,7 @@ apart = analysis.pairwise_distance(xy, scale=0.05)[:, 0, 1]         # animals 0 
 close = analysis.bouts(apart < 4, min_frames=10)                    # contact episodes
 ```
 
-## `mouselite.train`
+## `mouselite.training`
 
 ### `train(dataset_dir, kind, size="medium", weights=BASE, output_dir=None, epochs=10, batch_size=4, from_format=None, symlink=True, **kwargs) -> Path`
 
@@ -273,7 +273,7 @@ anything the CLI doesn't expose:
 
 ```python
 from mouselite.models import MOUSELITE
-from mouselite.train import train
+from mouselite.training import train
 
 train(
     "dataset",
@@ -307,7 +307,7 @@ DeepLabCut conversion does with animals, bodyparts and skeletons.
 
 ```python
 from mouselite.format import convert
-from mouselite.train import train
+from mouselite.training import train
 
 dataset = convert("dlc-project/", "output/train/dataset", "deeplabcut")
 train(dataset, "keypoints", output_dir="output/train", epochs=30)
