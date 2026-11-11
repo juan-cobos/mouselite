@@ -78,10 +78,26 @@ def from_deeplabcut(path: str | Path, class_name: str = "mouse") -> Loaded:
     return image_paths, xy, category
 
 
+#: Label files Lightning Pose keeps beside the training CSVs but never trains on: held-out
+#: sets it scores after training (`_new`, `_test`) and a hand-kept superset (`_full`).
+LP_IGNORED_SUFFIXES = ("_full", "_new", "_test")
+
+
 def from_lightning_pose(path: str | Path, class_name: str = "mouse") -> Loaded:
-    """Load the labeled frames of a Lightning Pose project (its folder or a label CSV)."""
+    """Load the labeled frames of a Lightning Pose project (its folder or a label CSV).
+
+    A folder loads every `CollectedData*.csv` (one per view) except the held-out and
+    auxiliary ones in `LP_IGNORED_SUFFIXES`.
+    """
     path = Path(path)
-    files = sorted(path.glob("CollectedData*.csv")) if path.is_dir() else [path]
+    if path.is_dir():
+        files = sorted(
+            f
+            for f in path.glob("CollectedData*.csv")
+            if not f.stem.endswith(LP_IGNORED_SUFFIXES)
+        )
+    else:
+        files = [path]
     if not files:
         msg = f"No CollectedData*.csv found in {path}"
         raise FileNotFoundError(msg)

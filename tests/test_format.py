@@ -217,6 +217,17 @@ def test_convert_lightning_pose_multiview(lp_project: Path, tmp_path: Path) -> N
     assert len(coco["images"]) == 2 * FRAMES_PER_VIDEO
 
 
+@pytest.mark.parametrize("suffix", ["_new", "_test", "_full"])
+def test_convert_lightning_pose_skips_held_out_csvs(
+    lp_project: Path, tmp_path: Path, suffix: str
+) -> None:
+    # Held-out and auxiliary label files sit next to the training CSV; none is loaded.
+    csv = lp_project / "CollectedData.csv"
+    (lp_project / f"CollectedData{suffix}.csv").write_text(csv.read_text())
+    output_dir = convert(lp_project, tmp_path / "out", "lightning-pose", train_fraction=1.0)
+    assert len(_load(output_dir / "train")["images"]) == FRAMES_PER_VIDEO
+
+
 def test_convert_unknown_format(dlc_project: Path, tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="Unknown format"):
         convert(dlc_project, tmp_path / "out", "nope")
