@@ -44,7 +44,7 @@ an unknown `kind`/`size`.
 
 ```python
 model = get_model("segmentation", size="large", dtype="float16", compile=True)
-model = get_model("detection", size="small", checkpoint="runs/best.pt")
+model = get_model("detection", size="small", checkpoint="runs/best.pth")
 ```
 
 ## `mouselite.tracker`
@@ -184,7 +184,7 @@ tracks = analysis.Tracks.from_coco("output/cage_results/cage_annotations.json", 
 | `xyxy` | `(T, N, 4)` | boxes, NaN where the animal was not seen |
 | `area` | `(T, N)` | box or mask area, NaN where absent |
 | `keypoints` | `(T, N, K, 2)` | pose keypoints, or `None` |
-| `keypoint_names` | `K` names | the names the model was trained with |
+| `keypoint_names` | `K` names | the export's category `keypoints` when it lists them; otherwise `kp0`, `kp1`, …, which is what `mouselite run` exports give today |
 | `masks` | `(T, N, H, W)` | only with `masks=True`, else `None` |
 | `fps`, `image_size`, `video` | | what the export recorded about the video |
 
@@ -237,7 +237,9 @@ arrays, so they compose with whatever you already use.
 | `mask_axes(masks)` | major axis, minor axis and body angle of each mask; `major / minor` is how stretched the animal is |
 
 ```python
-nose, tail = tracks.keypoint("nose"), tracks.keypoint("tail_base")
+# By position: `mouselite run` exports carry no keypoint names (see `keypoint_names`).
+# 0 and 13 are `nose` and `tail_base` in the MTMB dataset's keypoint order.
+nose, tail = tracks.keypoint(0), tracks.keypoint(13)
 xy = analysis.smooth(analysis.interpolate(tracks.centroids, max_gap=5))
 
 v = analysis.speed(xy, tracks.frame_index, tracks.fps, scale=0.05)  # cm/s

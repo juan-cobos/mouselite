@@ -55,7 +55,7 @@ units, gap filling and smoothing, see [`mouselite.analysis`](python-api.md#mouse
 | ------ | ------- | ------- |
 | `--kind` | *required* | `detection`, `segmentation` or `keypoints` |
 | `--size` | `medium` | `nano`, `small`, `medium` or `large`. Ignored for `keypoints`, which is a single checkpoint. |
-| `--checkpoint PATH` | — | Your own `.pt` weights. Skips the Hugging Face download; `--kind`/`--size` still choose the architecture, so they must match the checkpoint. |
+| `--checkpoint PATH` | — | Your own `.pth` weights. Skips the Hugging Face download; `--kind`/`--size` still choose the architecture, so they must match the checkpoint. |
 | `--dtype` | `float32` | Floating-point dtype the model is cast to (any `torch.dtype` name, e.g. `float16`, `bfloat16`). Half precision is faster on GPUs that support it. |
 | `--compile` / `--no-compile` | off | Trace the model with `torch.jit.trace` for faster per-frame inference at the cost of a slower start. Worth it for long videos. |
 | `--batch-size` | `1` | Batch size the traced model is optimised for. Only meaningful with `--compile`; the pipeline itself always predicts one frame at a time. |
@@ -100,7 +100,7 @@ mouselite run cage.mp4 --kind keypoints --top-k 2 --every 2 --tracker bytetrack 
 mouselite run cage.mp4 --kind segmentation --size large --dtype float16 --compile
 
 # Your own detection weights for the small architecture
-mouselite run cage.mp4 --kind detection --size small --checkpoint runs/best.pt
+mouselite run cage.mp4 --kind detection --size small --checkpoint runs/best.pth
 
 # Single animal: no tracker involved
 mouselite run cage.mp4 --kind detection --top-k 1
@@ -209,7 +209,7 @@ without it the command exits with status 1 and an install hint.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--share` / `--no-share` | share | Create a public `*.gradio.live` tunnel. Use `--no-share` for local-only. |
+| `--share` / `--no-share` | off | Create a public `*.gradio.live` tunnel. Off by default, so the app is only reachable from this machine. |
 | `--host` | Gradio's (`127.0.0.1`) | Interface to bind. `0.0.0.0` to expose on the LAN. |
 | `--port` | Gradio's (`7860`) | Port to bind. |
 

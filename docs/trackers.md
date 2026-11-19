@@ -50,9 +50,8 @@ Everything else is reachable from Python by passing keyword arguments through
 
 How many frames a track is kept alive with no matching detection before it is
 dropped and the animal, when it reappears, gets a new id. It counts the frames the
-tracker actually sees: MouseLite never tells the tracker the video's frame rate, so
-the same value is a shorter time at 60 fps than at 30, and shorter again with
-`--every 2`.
+tracker actually sees, not seconds, so the same value is a shorter time at 60 fps
+than at 30, and shorter again with `--every 2`.
 
 Mice disappear under nests, behind each other and into corners. If ids keep
 changing after a short occlusion, raise it (`--lost-track-buffer 90` is three
