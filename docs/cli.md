@@ -209,7 +209,7 @@ without it the command exits with status 1 and an install hint.
 
 | Option | Default | Meaning |
 | ------ | ------- | ------- |
-| `--share` / `--no-share` | off | Create a public `*.gradio.live` tunnel. Off by default, so the app is only reachable from this machine. |
+| `--share` / `--no-share` | off | Create a public `*.gradio.live` tunnel. The tunnel is off by default. Use `--host` to control the bind address. |
 | `--host` | Gradio's (`127.0.0.1`) | Interface to bind. `0.0.0.0` to expose on the LAN. |
 | `--port` | Gradio's (`7860`) | Port to bind. |
 

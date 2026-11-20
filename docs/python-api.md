@@ -238,7 +238,7 @@ arrays, so they compose with whatever you already use.
 
 ```python
 # By position: `mouselite run` exports carry no keypoint names (see `keypoint_names`).
-# 0 and 13 are `nose` and `tail_base` in the MTMB dataset's keypoint order.
+# If your model follows the MTMB keypoint order, 0 is nose and 13 is tail_base.
 nose, tail = tracks.keypoint(0), tracks.keypoint(13)
 xy = analysis.smooth(analysis.interpolate(tracks.centroids, max_gap=5))
 
