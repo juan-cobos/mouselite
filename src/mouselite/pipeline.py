@@ -18,6 +18,7 @@ from tqdm import tqdm
 from trackers.core.base import BaseTracker
 
 from mouselite.analysis import Tracks
+from mouselite.video import progress_total, read_frames
 
 # We always hand trackers the frame so the ones with camera motion compensation can use
 # it; the rest warn on every video, and the warning breaks the progress bar.
@@ -209,10 +210,17 @@ class Pipeline:
         annotations_path = results_dir / f"{video_path.stem}_annotations.json"
         trajectories_path = results_dir / f"{video_path.stem}_trajectories.csv"
         summary_path = results_dir / f"{video_path.stem}_summary.csv"
+        video_frames = read_frames(video_path)
+        video_info = sv.VideoInfo.from_video_path(str(video_path))
+        frames = tqdm(
+            video_frames,
+            total=progress_total(video_info),
+            disable=not show_progress,
+            desc=f"mouselite: {video_path.name}",
+        )
         results_dir.mkdir(parents=True, exist_ok=True)
 
         fps_monitor = sv.FPSMonitor() if hud else None
-        video_info = sv.VideoInfo.from_video_path(str(video_path))
         coco = {
             "info": {
                 "video": video_path.name,
@@ -225,14 +233,10 @@ class Pipeline:
             "annotations": [],
         }
 
-        frames = tqdm(
-            sv.get_video_frames_generator(str(video_path)),
-            total=video_info.total_frames,
-            disable=not show_progress,
-            desc=f"mouselite: {video_path.name}",
-        )
+        frames_read = 0
         with sv.VideoSink(str(target), video_info) if video else nullcontext() as sink:
             for frame_idx, frame in enumerate(frames):
+                frames_read += 1
                 detections = self.process_frame(frame, frame_idx)
                 if frame_idx % self.every == 0:
                     # Frames are not written out: `frame_index` maps each image back to
@@ -277,6 +281,8 @@ class Pipeline:
         if show:
             cv2.destroyAllWindows()
 
+        # The container's count can be wrong; store how many frames were really read.
+        coco["info"]["total_frames"] = frames_read
         save_json_file(coco, file_path=annotations_path)
         tracks = Tracks.from_coco(annotations_path)
         tracks.to_dataframe().to_csv(trajectories_path, index=False)

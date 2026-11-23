@@ -16,6 +16,7 @@ from trackers import (
 
 from mouselite.analysis import Tracks
 from mouselite.pipeline import MetaAnnotator
+from mouselite.video import progress_total, read_frames
 
 TRACKERS = {
     "sort": SORTTracker,
@@ -89,6 +90,7 @@ def retrack(
     target = Path(output_dir) / f"{stem}_retracked.mp4"
     target.parent.mkdir(parents=True, exist_ok=True)
 
+    video_frames = read_frames(video_path)
     video_info = sv.VideoInfo.from_video_path(str(video_path))
     detections = sv.Detections.empty()
     detections.tracker_id = np.array([], dtype=int)
@@ -96,8 +98,8 @@ def retrack(
     with sv.VideoSink(target_path=str(target), video_info=video_info) as sink:
         for frame_idx, frame in enumerate(
             tqdm(
-                sv.get_video_frames_generator(str(video_path)),
-                total=video_info.total_frames,
+                video_frames,
+                total=progress_total(video_info),
                 disable=not show_progress,
                 desc="retracking",
             ),

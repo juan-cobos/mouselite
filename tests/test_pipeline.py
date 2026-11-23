@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 from pathlib import Path
 from typing import ClassVar
 
@@ -192,3 +194,59 @@ def test_process_frame_runs_model_every_n_frames() -> None:
     assert len(model.frames) == 2
     assert results[1] is results[0]
     assert results[3] is results[2]
+
+
+def make_raw_h264(path: Path, frames: int = 50) -> None:
+    """A raw H.264 stream (no container), whose frame count OpenCV reports as garbage."""
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-loglevel",
+            "error",
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=size=64x64:rate=25",
+            "-frames:v",
+            str(frames),
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-f",
+            "h264",
+            str(path),
+        ],
+        check=True,
+    )
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="needs ffmpeg")
+def test_run_raw_h264(tmp_path: Path) -> None:
+    """run() reads every frame even when the container's frame count is invalid."""
+    video_path = tmp_path / "raw.h264"
+    make_raw_h264(video_path)
+
+    pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker())
+    results_dir = pipeline.run(
+        video_path,
+        output_dir=tmp_path / "output",
+        show_progress=False,
+        video=False,
+    )
+
+    coco = json.loads((results_dir / "raw_annotations.json").read_text())
+    assert len(coco["images"]) == 50
+    assert coco["info"]["total_frames"] == 50
+
+
+def test_run_unreadable_video(tmp_path: Path) -> None:
+    """run() raises instead of writing empty results when no frame can be read."""
+    video_path = tmp_path / "broken.mp4"
+    video_path.write_bytes(b"not a video")
+
+    pipeline = Pipeline(model=FakeKeypointModel(), tracker=FakeTracker())
+    with pytest.raises(ValueError, match="no frames"):
+        pipeline.run(video_path, output_dir=tmp_path / "output", show_progress=False)
+    assert not (tmp_path / "output").exists()
